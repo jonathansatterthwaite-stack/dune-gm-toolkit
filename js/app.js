@@ -148,6 +148,7 @@
   function coerce(el, raw) {
     const t = el.dataset.type;
     if (t === "num") { const n = parseInt(raw, 10); return isNaN(n) ? 0 : n; }
+    if (t === "float") { const n = parseFloat(raw); return isNaN(n) ? 0 : n; }
     if (t === "bool") return raw === true || raw === "true";
     return raw;
   }
@@ -774,6 +775,7 @@
     const views = Object.assign({ roller: renderRoller, conflict: renderConflict, npcs: renderNpcs, scene: renderScene, hooks: renderHooks, reference: renderReference }, GM.views);
     $("#main").innerHTML = (views[S.tab] || renderRoller)();
     renderPools();
+    GM.afterRender.forEach((f) => f(S.tab));
   }
 
   // =====================================================================
@@ -977,6 +979,7 @@
     if (!el.dataset || !el.dataset.bind) return;
     if (el.type === "checkbox" || el.tagName === "SELECT") return;
     setPath(el.dataset.bind, coerce(el, el.value));
+    GM.onInput.forEach((f) => f(el.dataset.bind, el));
     save();
     if (el.dataset.live) {
       const pos = el.selectionStart;
@@ -1041,7 +1044,7 @@
   window.GM = {
     get S() { return S; },
     D, save, render, toast, adjust, log, esc, uid, pick, shuffle, clamp, pct, stepper, seg, select, sideBadge, getPath, setPath,
-    views: {}, actions: {}, onChange: [],
+    views: {}, actions: {}, onChange: [], onInput: [], afterRender: [],
     // give a module its own top-level state key, filling in any missing fields
     ensure(key, def) { S[key] = Object.assign(def, S[key] || {}); return S[key]; },
     // jump to the Dice tab with a pre-filled test

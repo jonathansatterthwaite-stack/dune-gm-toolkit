@@ -52,7 +52,7 @@
           <p class="hint">Type, allegiance, military and population, after the world-building steps in The Great Game (p.80).</p>
           ${p ? `<h3>${esc(p.name)} <span class="pg">${esc(p.designation)}</span></h3>
             <dl class="kv"><dt>World</dt><dd>${esc(p.type)}</dd><dt>Allegiance</dt><dd>${esc(p.politics)}</dd><dt>Military</dt><dd>${esc(p.military)}</dd><dt>Population</dt><dd>${esc(p.population)}</dd><dt>Notable for</dt><dd>${esc(p.feature)}</dd></dl>
-            <div class="c-actions"><button class="btn" data-act="wSave" data-k="planet">Save</button></div>` : `<div class="empty">Roll up a world for the PCs to visit, conquer, or flee.</div>`}
+            <div class="c-actions"><button class="btn" data-act="wSave" data-k="planet">Save</button><button class="btn primary" data-act="wToStarmap">Add to starmap</button></div>` : `<div class="empty">Roll up a world for the PCs to visit, conquer, or flee.</div>`}
         </div>
         <div class="card">
           <div class="card-head"><h2>Rival House</h2><div class="mini">${G.select("worlds.rivalType", Object.keys(X.HOUSE_TYPES).map((k) => ({ v: k, l: X.HOUSE_TYPES[k].name })))}<button class="btn primary" data-act="wRival">Generate</button></div></div>
@@ -102,6 +102,8 @@
   const A = G.actions;
   const R = () => { G.save(); G.render(); };
   A.wPlanet = () => { W().planet = genPlanet(); R(); };
+  A.wToStarmap = () => { if (G.addToStarmap) G.addToStarmap(W().planet); };
+  G.genPlanet = genPlanet;
   A.wRival = () => { W().rival = genRival(W().rivalType); R(); };
   A.wSietch = () => { W().sietch = genSietch(); R(); };
   A.wHazard = () => { W().hazard = genHazard(); R(); };
