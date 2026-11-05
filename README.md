@@ -4,6 +4,16 @@ A browser-based GM screen for **Dune: Adventures in the Imperium** (Modiphius, 2
 
 **To run it:** double-click `index.html`. Everything you do is saved in the browser's local storage, so it's still there after a refresh.
 
+**To launch it from this page:**
+
+1. While signed in to GitHub, click **[Download the toolkit (ZIP)](https://github.com/jonathansatterthwaite-stack/dune-gm-toolkit/archive/refs/heads/main.zip)**. It always gets the latest version.
+2. Unzip it anywhere.
+3. Open `index.html` in the `dune-gm-toolkit-main` folder.
+
+The repo is private, so the link only works for accounts with access, and the toolkit isn't hosted online.
+
+Your saved data lives in the browser, not in the folder. Some browsers tie it to the file's location, so when you update, unzip the new copy over the old one so the path stays the same.
+
 ## What's in it
 
 | Tab | What it does |
