@@ -15,7 +15,7 @@ A browser-based GM screen for **Dune: Adventures in the Imperium** (Modiphius, 2
 | **Scene** | Holds the scene's traits (with ranks), example complications, notes, and extended tasks and peril clocks. |
 | **House** | Runs *The Great Game*'s House management. The House sheet covers status level and its effects, Wealth, Resources, House skills, domains, spaces, roles, upkeep levels, holdings, traits and boons. A yearly session walks through news, income, events by status level, upkeep, ventures and end of year. Ventures roll House skill + the leader's drive, pay the cost, adjust status, and carry partial successes into next year. Every step is recorded in a House chronicle. |
 | **Worlds** | Generators for planets and rival Houses (*The Great Game*), Fremen sietches (*Sand and Dust*), and desert terrain and hazards. A rival's skills can be rolled as House actions, hazards can be added to the scene, and a worm clock can be started on the Scene tab. |
-| **Starmap** | A 3D map of your worlds, built with three.js. Drag to orbit, right-drag to pan, scroll to zoom, and click a world to fly to it. Each planet is painted procedurally with clouds, atmosphere glow, rings and moons. Pick from 14 planet types (desert, ocean, garden, forest, jungle, savanna, ice, volcanic, barren, toxic, industrial, storm, gas giant, ice giant). You can then tweak colours, sea level, ice caps, clouds, terrain scale, size, tilt, spin and moons, and toggle features: dunes, craters, gas bands, a great storm, city lights, lava and rings. Save any look as your own planet type. Worlds from the planet generator can be added straight to the map. |
+| **Galaxy map** | A full-screen 3D map of the Known Universe, built with three.js. It shows a procedural spiral galaxy, and you zoom from the whole galaxy into the Imperium around Sol. About 20 canon systems are placed from Dune lore. Where a world orbits a real star (Arrakis/Canopus, Caladan/Delta Pavonis, Giedi Prime/36 Ophiuchi B, Kaitain/Alpha Piscium, Ix/Alkalurops, Ecaz/Alpha Centauri B and more), it sits at that star's real position. Worlds around invented stars get estimated positions, and each system is labelled "Real star" or "Estimated position". Click a star or search to fly there: the planet renders in a panel on the left and its details open on the right. Hovering shows distances from Sol and from the selected system. Each planet's look is editable, with 14 planet types, colours, sea level, ice, clouds, atmosphere, tilt, spin, moons, dunes, craters, gas bands, storms, city lights, lava and rings. You can save any look as your own type, and add systems and worlds. Press Esc to close panels or leave the map. |
 | **Hooks** | Generates adventure seeds. Click any part of a seed to re-roll just that part. |
 | **Reference** | Searchable rules summaries with book and page numbers: Core, *The Great Game*, *Power and Pawns* and *Sand and Dust*. |
 
@@ -31,7 +31,8 @@ Rules numbers (costs, bands, dice) follow the books. Descriptions and the planet
 - `js/app.js` is the core app and draws the main tabs. It exposes `window.GM` so other modules can add tabs.
 - `js/house.js` is the House tab.
 - `js/worlds.js` is the Worlds tab.
-- `js/planets.js` holds the planet types and the procedural texture painter.
-- `js/starmap.js` is the Starmap tab: the three.js scene, camera controls and planet editor.
+- `js/planets.js` holds the planet types, the procedural texture painter and the reusable 3D planet model.
+- `js/galaxy-data.js` holds the canon star systems: real-star coordinates, estimated positions and lore notes.
+- `js/galaxy.js` is the galaxy map: the galaxy scene, camera, panels, search and planet viewer.
 - `js/vendor/three.min.js` is three.js r187, bundled so it loads without a server. `js/vendor/README.md` explains how to rebuild it.
 - `[rulebooks]/` contains your PDFs, which the rules were checked against.

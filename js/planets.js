@@ -189,5 +189,77 @@ window.Planets = (function () {
     return thumbCache[key];
   }
 
-  return { BASE, TYPES, typeFromText, paint, paintRing, thumb };
+  // ---------- 3D model (needs three.js) ----------
+  // A planet at radius 1 with clouds, atmosphere rim + halo, optional rings and moons.
+  const ATMO_VS = "varying vec3 vN; varying vec3 vV; void main(){ vN = normalize(normalMatrix * normal); vec4 mv = modelViewMatrix * vec4(position, 1.0); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }";
+  const ATMO_FS = "uniform vec3 color; uniform float strength; uniform float mode; varying vec3 vN; varying vec3 vV; void main(){ float d = abs(dot(normalize(vN), normalize(vV))); float f = mode < 0.5 ? pow(1.0 - d, 3.0) : pow(clamp(d / 0.6, 0.0, 1.0), 2.0) * (1.0 - smoothstep(0.6, 1.0, d)); gl_FragColor = vec4(color * f * strength, 1.0); }";
+  let shared = null;
+  function sharedGeo() {
+    if (shared) return shared;
+    const T = window.THREE;
+    const rg = new T.RingGeometry(1.35, 2.35, 160, 1);
+    const pos = rg.attributes.position, uv = rg.attributes.uv, v = new T.Vector3();
+    for (let i = 0; i < pos.count; i++) { v.fromBufferAttribute(pos, i); uv.setXY(i, v.length() - 1.35, 0.5); }
+    shared = { sphere: new T.SphereGeometry(1, 128, 64), moon: new T.SphereGeometry(1, 24, 12), ring: rg };
+    return shared;
+  }
+  function model(look, seed) {
+    const T = window.THREE, geo = sharedGeo();
+    const g = new T.Group(), tilt = new T.Group();
+    const body = new T.Mesh(geo.sphere, new T.MeshStandardMaterial({ roughness: 0.92, metalness: 0, color: 0x777777 }));
+    const clouds = new T.Mesh(geo.sphere, new T.MeshStandardMaterial({ transparent: true, depthWrite: false, roughness: 1 }));
+    const ring = new T.Mesh(geo.ring, new T.MeshStandardMaterial({ transparent: true, side: T.DoubleSide, depthWrite: false, roughness: 1 }));
+    ring.rotation.x = -Math.PI / 2;
+    tilt.add(body, clouds, ring);
+    const mkAtmo = (mode, side) => new T.Mesh(geo.sphere, new T.ShaderMaterial({ uniforms: { color: { value: new T.Color() }, strength: { value: 1 }, mode: { value: mode } }, vertexShader: ATMO_VS, fragmentShader: ATMO_FS, transparent: true, blending: T.AdditiveBlending, depthWrite: false, side }));
+    const rim = mkAtmo(0, T.FrontSide), halo = mkAtmo(1, T.BackSide);
+    rim.scale.setScalar(1.02); halo.scale.setScalar(1.22); clouds.scale.setScalar(1.012);
+    const moons = new T.Group();
+    g.add(tilt, rim, halo, moons);
+    const tex = (c) => { const t = new T.CanvasTexture(c); t.colorSpace = T.SRGBColorSpace; t.anisotropy = 8; return t; };
+    const m = { group: g, look: null, seed };
+
+    m.shape = function () {
+      const L = m.look;
+      tilt.rotation.z = (L.tilt * Math.PI) / 180;
+      ring.visible = !!L.rings;
+      [rim, halo].forEach((x) => { x.material.uniforms.color.value.set(L.atmo); x.material.uniforms.strength.value = L.atmoStrength * (x === rim ? 1.1 : 0.9); x.visible = L.atmoStrength > 0.01; });
+      body.material.roughness = L.water > 0.3 ? 0.72 : 0.92;
+      const n = Math.round(L.moons || 0);
+      if (moons.children.length !== n) {
+        moons.children.slice().forEach((pv) => { moons.remove(pv); pv.children[0].material.dispose(); });
+        const r = rng((m.seed || 1) + 7);
+        for (let i = 0; i < n; i++) {
+          const pv = new T.Group(); pv.rotation.set((r() - 0.5) * 0.5, r() * Math.PI * 2, 0); pv.userData.speed = 0.25 / (1 + i * 0.6);
+          const mo = new T.Mesh(geo.moon, new T.MeshStandardMaterial({ color: new T.Color().setHSL(0.08, 0.08, 0.35 + r() * 0.3), roughness: 1 }));
+          mo.position.set(2.9 + i * 0.85, 0, 0); mo.scale.setScalar(0.12 + r() * 0.12);
+          pv.add(mo); moons.add(pv);
+        }
+      }
+    };
+    m.paint = function (w, h) {
+      const out = paint(m.look, m.seed, w, h), bm = body.material;
+      [bm.map, bm.emissiveMap, clouds.material.map, ring.material.map].forEach((t) => t && t.dispose());
+      bm.map = tex(out.map); bm.color.set(0xffffff);
+      if (out.emissive) { bm.emissiveMap = tex(out.emissive); bm.emissive.set(0xffffff); bm.emissiveIntensity = 1.3; } else { bm.emissiveMap = null; bm.emissive.set(0x000000); }
+      bm.needsUpdate = true;
+      clouds.visible = !!out.clouds; clouds.material.map = out.clouds ? tex(out.clouds) : null; clouds.material.needsUpdate = true;
+      const rt = tex(paintRing(m.look, m.seed));
+      ring.material.map = rt; ring.material.emissiveMap = rt; ring.material.emissive.set(0x555555); ring.material.needsUpdate = true;
+    };
+    m.set = function (lk, sd) { m.look = Object.assign({}, BASE, lk); m.seed = sd; m.shape(); };
+    m.tick = function (dt) {
+      const s = (m.look && m.look.spin) || 0;
+      body.rotation.y += s * dt; clouds.rotation.y += s * 1.3 * dt;
+      moons.children.forEach((pv) => (pv.rotation.y += pv.userData.speed * dt));
+    };
+    m.extent = () => (m.look.rings ? 2.4 : m.look.moons ? 2.9 + (m.look.moons - 1) * 0.85 + 0.3 : 1.25);
+    m.dispose = function () {
+      g.traverse((o) => { if (o.material) { ["map", "emissiveMap"].forEach((k) => o.material[k] && o.material[k].dispose()); o.material.dispose(); } });
+    };
+    m.set(look, seed);
+    return m;
+  }
+
+  return { BASE, TYPES, typeFromText, paint, paintRing, thumb, model };
 })();

@@ -1005,7 +1005,7 @@
     render();
   });
   document.addEventListener("keydown", (e) => {
-    if (e.target.closest("input, textarea, select") || e.ctrlKey || e.metaKey || e.altKey) return;
+    if ((e.target.closest && e.target.closest("input, textarea, select")) || e.ctrlKey || e.metaKey || e.altKey) return;
     if ((e.key === "r" || e.key === "R") && S.tab === "roller") { e.preventDefault(); doRoll(); }
   });
 
