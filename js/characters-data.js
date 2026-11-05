@@ -48,7 +48,7 @@ window.DUNE_CH = (function () {
     { name: "Sardaukar", trait: "Sardaukar", mandatory: ["Unquestionable Loyalty"], anyOf: false, suggest: "Commander, Duelist, Protector, Scout, Sergeant, Strategist, Tactician, Warrior", book: "Power and Pawns p.31" },
     { name: "Tleilaxu Face Dancer", trait: "Face Dancer", mandatory: ["Facedance", "Muscular Conditioning"], anyOf: false, suggest: "Athlete, Envoy, Infiltrator, Scout, Spy", book: "Power and Pawns p.46" },
     { name: "Ginaz Cadet", trait: "Ginaz Cadet", mandatory: ["Weapon Focus"], anyOf: false, suggest: "Duelist, Protector, Warrior", book: "Power and Pawns p.52" },
-    { name: "Ginaz Swordmaster", trait: "Swordmaster of Ginaz", mandatory: ["Master of Battle"], anyOf: false, suggest: "Commander, Duelist, Protector, Sergeant, Strategist, Tactician, Warrior", book: "Power and Pawns p.52" },
+    { name: "Ginaz Swordmaster", trait: "Swordmaster of Ginaz", mandatory: ["Master of Battle"], anyOf: false, group: { faction: "Ginaz Swordmaster", min: 2, max: 3, label: "Swordmaster talents", rule: "Master of Battle plus one or two other Swordmaster talents (three at most)" }, suggest: "Commander, Duelist, Protector, Sergeant, Strategist, Tactician, Warrior", book: "Power and Pawns p.52" },
     { name: "CHOAM Agent", trait: "CHOAM", mandatory: ["Hand of CHOAM"], anyOf: false, suggest: "Analyst, Courtier, Envoy, Steward, Strategist", book: "Great Game p.17" },
   ];
 

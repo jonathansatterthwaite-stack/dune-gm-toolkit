@@ -7,7 +7,7 @@
   const ARCH_SRC = { Core: "Core p.113", "Sand and Dust": "Sand and Dust p.58", "Great Game": "Great Game p.72" };
   DB.view("talents", () => DUNE_CH.TALENTS.map((t) => ({ name: t.name, text: t.text, faction: t.faction || "", param: t.param || "", src: t.book })));
   DB.view("archetypes", () => DUNE_CH.ARCHETYPES.map((a) => ({ name: a.name, primary: a.primary, secondary: a.secondary, focuses: a.focuses, talents: a.talents, src: ARCH_SRC[a.book] || a.book })));
-  DB.view("factions", () => DUNE_CH.FACTIONS.map((f) => ({ name: f.name, trait: f.trait, mandatory: f.mandatory, rule: f.anyOf ? "Take at least one of the listed talents" : "Must take all listed talents", archetypes: f.suggest.split(/,\s*/), src: /p\./.test(f.book) ? f.book : f.book + "" })));
+  DB.view("factions", () => DUNE_CH.FACTIONS.map((f) => ({ name: f.name, trait: f.trait, mandatory: f.mandatory, rule: f.group ? f.group.rule : f.anyOf ? "Take at least one of the listed talents" : "Must take all listed talents", archetypes: f.suggest.split(/,\s*/), src: /p\./.test(f.book) ? f.book : f.book + "" })));
   DB.view("abilities", () => DUNE.SPECIAL_ABILITIES.map((a) => ({ name: a.name, text: a.text.replace("{skill}", "a chosen skill"), src: "Core p.327" })));
   DB.view("ventures", () => DUNE_X.VENTURES.map((v) => ({ name: v.name, group: v.group, skill: v.skill === "?" ? "varies" : v.skill || "—", cost: [v.wealth ? v.wealth + " Wealth" : "", v.res ? v.res + " Resources" : ""].filter(Boolean).join(", ") || "—", successes: v.succ || 0, text: v.note, src: "Great Game p.104" })));
   DB.view("focuses", () => {

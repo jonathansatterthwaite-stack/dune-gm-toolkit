@@ -13,6 +13,7 @@
   const isNotable = (k) => k === "supNotable" || k === "npcNotable";
   const isSup = (k) => k === "supMinor" || k === "supNotable";
   const tierOf = (k) => (isPC(k) ? "pc" : isMinor(k) ? "minor" : isNotable(k) ? "notable" : "major");
+  const groupCount = (ch, faction) => ch.talents.filter((t) => { const d = talentDef(t.name); return d && d.faction === faction; }).length;
   const focusQuota = (v) => (v >= 8 ? 3 : v === 7 ? 2 : v === 6 ? 1 : 0);
 
   G.ensure("chars", { list: [], sel: "", filter: "all", nf: { skill: "Battle", name: "" }, nt: { name: "" }, na: { name: "", tangible: true }, nab: { name: "Proficiency", skill: "Battle" }, rollDrive: "" });
@@ -123,7 +124,17 @@
     if (f) {
       const has = (n) => ch.talents.some((t) => t.name === n);
       if (f.anyOf ? !f.mandatory.some(has) : !f.mandatory.every(has)) v.talents.push(`${f.name} must take ${f.anyOf ? "one of: " : ""}${f.mandatory.join(", ")}.`);
+      if (f.group) {
+        const n = groupCount(ch, f.group.faction);
+        if (n < f.group.min) v.talents.push(`${f.name}: ${f.group.rule} (${n} ${f.group.label.replace(/s$/, n === 1 ? "" : "s")} so far).`);
+        if (n > f.group.max) v.talents.push(`${f.name}: at most ${f.group.max} ${f.group.label} (${n} now).`);
+      }
     }
+    // talents restricted to one template (Power and Pawns p.52: only Ginaz-trained Swordmasters may take Swordmaster talents)
+    C.FACTIONS.filter((x) => x.group && x !== f).forEach((x) => {
+      const bad = ch.talents.filter((t) => { const d = talentDef(t.name); return d && d.faction === x.group.faction; });
+      if (bad.length) v.talents.push(`${bad.map((t) => t.name).join(", ")}: only for the ${x.name} template.`);
+    });
     ch.talents.forEach((t) => { const d = talentDef(t.name); if (d && d.param && !t.param) v.talents.push(`${t.name} needs a ${d.param} choice.`); });
     // drives
     const dv = drives(ch);
@@ -186,6 +197,7 @@
     const twant = k === "pc" ? 3 : k === "quick" ? 1 : k === "supNotable" ? (ch.extras.talent2 ? 2 : 1) : k === "npcNotable" ? 1 : k === "npcMajor" ? 3 : 0;
     const addT = (n) => { if (ch.talents.length < twant && !ch.talents.some((t) => t.name === n) && talentDef(n)) { const d = talentDef(n); ch.talents.push({ id: uid(), name: n, param: d.param === "skill" ? prim : d.param === "drive" ? bestDrive(ch) || "Duty" : d.param === "asset" ? "dueling" : "" }); } };
     if (f && !(f.anyOf ? f.mandatory.some((n) => ch.talents.some((t) => t.name === n)) : f.mandatory.every((n) => ch.talents.some((t) => t.name === n)))) (f.anyOf ? [pick(f.mandatory)] : f.mandatory).forEach(addT);
+    if (f && f.group) shuffle(C.TALENTS.filter((t) => t.faction === f.group.faction)).forEach((t) => { if (groupCount(ch, f.group.faction) < f.group.min) addT(t.name); });
     if (a) a.talents.forEach(addT);
     shuffle(C.TALENTS.filter((t) => !t.faction && t.book.startsWith("Core"))).forEach((t) => addT(t.name));
     // drives
@@ -235,7 +247,7 @@
       <label class="field">Name<input type="text" data-bind="${base}.name" value="${esc(ch.name)}" placeholder="e.g. Kara Molay"/></label>
       <label class="field">Concept<input type="text" data-bind="${base}.concept" value="${esc(ch.concept)}" placeholder="One line: who are they and what do they do?"/></label>
       ${isPC(k) || k !== "npcMinor" ? `<label class="field">Faction template (optional)<select data-bind="${base}.faction"><option value="">None — a House agent</option>${C.FACTIONS.map((x) => `<option value="${esc(x.name)}" ${ch.faction === x.name ? "selected" : ""}>${esc(x.name)} (${esc(x.book)})</option>`).join("")}</select></label>` : ""}
-      ${f ? `<p class="hint">Bonus trait <b>${esc(f.trait)}</b>. Must take ${f.anyOf ? "one of" : ""} <b>${esc(f.mandatory.join(", "))}</b>. Suits: ${esc(f.suggest)}.</p>` : ""}`;
+      ${f ? `<p class="hint">Bonus trait <b>${esc(f.trait)}</b>. Must take ${f.anyOf ? "one of" : ""} <b>${esc(f.mandatory.join(", "))}</b>${f.group ? ` — ${esc(f.group.rule)}` : ""}. Suits: ${esc(f.suggest)}.</p>` : ""}`;
     // 2 archetype
     const books = ["Core", "Sand and Dust", "Great Game"];
     const s2 = `<label class="field">Archetype${isPC(k) ? "" : " (optional template)"}<select data-bind="${base}.archetype"><option value="">${isPC(k) ? "Choose…" : "None"}</option>${books.map((b) => `<optgroup label="${b}">${C.ARCHETYPES.filter((x) => x.book === b).map((x) => `<option value="${esc(x.name)}" ${ch.archetype === x.name ? "selected" : ""}>${esc(x.name)} — ${x.primary}/${x.secondary}</option>`).join("")}</optgroup>`).join("")}</select></label>
