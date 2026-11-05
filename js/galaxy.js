@@ -1032,4 +1032,16 @@
     if (E.ready) focusSystem(s);
     return p;
   };
+
+  // The Compendium links planets to the map by name.
+  const planetByName = (name) => GX().planets.find((x) => x.name.toLowerCase() === String(name).toLowerCase());
+  G.hasStarmapPlanet = (name) => !!planetByName(name);
+  G.showOnStarmap = (name) => {
+    const p = planetByName(name); if (!p) return false;
+    const gx = GX(), s = sysById(p.systemId);
+    gx.selSystem = p.systemId; gx.selPlanet = p.id;
+    G.S.tab = "starmap"; R();
+    if (E.ready && s) focusSystem(s);
+    return true;
+  };
 })();
