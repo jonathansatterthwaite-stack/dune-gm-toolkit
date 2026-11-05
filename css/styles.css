@@ -436,3 +436,15 @@ body.gx-open { overflow: hidden; }
   .gx-left .gx-sub, .gx-left .gx-cycle { display: none; }
   .gx-bottom { display: none; }
 }
+/* galaxy map: solar-system view */
+.gx-time { display: flex; gap: 4px; pointer-events: auto; }
+.gx-time .gx-btn { padding: 3px 9px; font-size: 12px; }
+.gx-time .gx-btn.on { border-color: var(--gx-accent); color: #fff; }
+.gx-tab.virt { border-style: dotted; color: var(--gx-dim); }
+.gx-tab.virt.on { color: #fff; }
+.gx-label-virt b { color: #b8aa90; font-weight: 400; }
+.gx-label-star b { color: #ffe2a8; font-size: 13px; letter-spacing: 0.18em; }
+.gx-row-world { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: end; }
+.gx-enter { border-color: rgba(232, 160, 80, 0.55); color: #ffd9a8; }
+.gx-orbit { margin: 0 0 10px; }
+.gx-tip-hint { font-style: italic; opacity: 0.8; }

@@ -35,7 +35,79 @@
   const worldPos = (s) => [SOL[0] + s.pos[0], SOL[1] + s.pos[1], SOL[2] + s.pos[2]];
   const distSol = (s) => Math.hypot(s.pos[0], s.pos[1], s.pos[2]);
   const distBetween = (a, b) => Math.hypot(a.pos[0] - b.pos[0], a.pos[1] - b.pos[1], a.pos[2] - b.pos[2]);
-  const planetLabel = (p) => `${p.name}${p.orbit ? ` (${p.orbit})` : ""}`;
+  const planetLabel = (p) => `${p.name}${p.orbit && !p.name.endsWith(" " + p.orbit) ? ` (${p.orbit})` : ""}`;
+
+  // ---------- solar-system layout ----------
+  // Orbit numerals from lore (Arrakis III, Wallach IX) set each world's slot; slot → distance follows the
+  // Titius–Bode pattern (III ≈ 1 AU). Empty slots are filled with deterministic "uncharted" worlds.
+  const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+  const romanN = (o) => { const i = ROMAN.indexOf(String(o || "").trim().toUpperCase()); return i >= 0 ? i + 1 : 0; };
+  function hashStr(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  const bodeAU = (n) => (n <= 1 ? 0.4 : 0.4 + 0.3 * Math.pow(2, n - 2));
+  const STAR_MASS = { O: 20, B: 6, A: 2, F: 1.3, G: 1, K: 0.75, M: 0.4 };
+  const STAR_RAD = { O: 7, B: 5.5, A: 4.6, F: 4, G: 3.4, K: 2.8, M: 2.2 };
+  const starCls = (s) => String(s.spec || "G").charAt(0).toUpperCase();
+  const orbitR = (au) => 12 + 26 * Math.sqrt(au); // compressed for display
+  // Luminosity class (V dwarf … I supergiant) scales mass and drawn size: Canopus (F0 II) is a heavy, bright giant.
+  const lumClass = (s) => { const m = String(s.spec || "").match(/(Ia|Ib|I|II|III|IV|V)/); return m ? m[1] : "V"; };
+  const LUM_MASS = { Ia: 12, Ib: 9, I: 9, II: 5, III: 2.5, IV: 1.3, V: 1 };
+  const starMass = (s) => (STAR_MASS[starCls(s)] || 1) * (LUM_MASS[lumClass(s)] || 1);
+  const starRadius = (s) => (STAR_RAD[starCls(s)] || 3.4) * Math.min(1.7, Math.sqrt(LUM_MASS[lumClass(s)] || 1));
+  const yearOf = (au, s) => Math.sqrt((au * au * au) / starMass(s));
+  const yearText = (y) => (y < 1 ? `${Math.round(y * 365)} days` : `${y.toFixed(y < 10 ? 2 : 1)} years`);
+  const HABITABLE = ["garden", "ocean", "forest", "jungle", "savanna", "desert", "storm", "toxic", "industrial", "ice"];
+  function fillerType(au, r) {
+    const pick = (arr) => arr[Math.floor(r() * arr.length)];
+    if (au < 0.5) return pick(["volcanic", "barren", "barren"]);
+    if (au < 1.4) return pick(["barren", "toxic", "desert", "storm", "savanna"]);
+    if (au < 3.2) return pick(["barren", "desert", "ice", "toxic"]);
+    if (au < 14) return pick(["gas", "gas", "icegiant"]);
+    return pick(["icegiant", "ice", "barren"]);
+  }
+  function systemLayout(sys) {
+    const r = rng(hashStr(sys.id));
+    // fixed draws first, so adding or charting worlds never reshuffles the rest of the system
+    let count = 3 + Math.floor(r() * 5);
+    const slotRand = Array.from({ length: 12 }, () => [r(), r(), r(), r()]);
+    const beltRoll = r();
+    const slots = new Map();
+    const free = (k) => k >= 1 && k <= 12 && !slots.has(k);
+    const place = (pl, want) => {
+      let n = want;
+      if (!free(n)) for (let d = 1; d < 12; d++) { if (free(want + d)) { n = want + d; break; } if (free(want - d)) { n = want - d; break; } }
+      if (free(n)) slots.set(n, pl);
+    };
+    const real = planetsOf(sys.id);
+    real.filter((pl) => romanN(pl.orbit)).forEach((pl) => place(pl, romanN(pl.orbit)));
+    real.filter((pl) => !romanN(pl.orbit)).forEach((pl) => place(pl, pl.type === "gas" || pl.type === "icegiant" ? 5 : HABITABLE.includes(pl.type) ? 3 : 2));
+    count = Math.max(count, 1, ...slots.keys());
+    const bodies = [];
+    for (let n = 1; n <= count; n++) {
+      const sr = slotRand[n - 1];
+      let planet = slots.get(n), virtual = false;
+      if (!planet) {
+        const rr = rng(Math.floor(sr[0] * 4294967295));
+        const type = fillerType(bodeAU(n), rr), look = clone(P.TYPES[type].look);
+        if (type === "gas" || type === "icegiant") { look.moons = Math.floor(rr() * 4); look.rings = look.rings || rr() < 0.3; }
+        planet = { id: `virt:${sys.id}:${n}`, systemId: sys.id, name: `${sys.name} ${ROMAN[n - 1]}`, orbit: ROMAN[n - 1], allegiance: "", notes: "", seed: Math.floor(sr[1] * 1e9), type, look, virtual: true };
+        virtual = true;
+      }
+      const au = planet.au > 0 ? planet.au : bodeAU(n);
+      bodies.push({ id: planet.id, planet, n, au, R: orbitR(au), virtual, incl: (sr[2] - 0.5) * 0.08, node: sr[0] * Math.PI * 2, phase: sr[3] * Math.PI * 2 });
+    }
+    const belt = count >= 5 && beltRoll < 0.6 ? orbitR((bodeAU(4) + bodeAU(5)) / 2) : 0;
+    return { bodies, belt, count };
+  }
+  const layoutKey = (s) => JSON.stringify([s.name, s.spec, planetsOf(s.id).map((pl) => [pl.id, pl.name, pl.orbit, pl.au, pl.type])]);
+  function anyPlanet(id) {
+    if (!id) return null;
+    if (!id.startsWith("virt:")) return planetById(id);
+    if (E.sys) { const b = E.sys.bodies.find((x) => x.id === id); if (b) return b.planet; }
+    const s = sysById(id.split(":")[1]);
+    const b = s && systemLayout(s).bodies.find((x) => x.id === id);
+    return b ? b.planet : null;
+  }
 
   // One-time migration from the earlier Starmap tab.
   (function migrate() {
@@ -57,6 +129,14 @@
     G.save();
   })();
 
+  // One-time patch: Arrakis has two moons in the novels.
+  (function patchMoons() {
+    const gx = GX(); if (gx.moonPatch) return;
+    const a = gx.planets.find((pl) => pl.name === "Arrakis");
+    if (a && !a.look.moons) a.look.moons = 2;
+    gx.moonPatch = true;
+  })();
+
   function typeList() {
     return Object.keys(P.TYPES).map((k) => ({ key: k, name: P.TYPES[k].name, desc: P.TYPES[k].desc, look: P.TYPES[k].look, custom: false }))
       .concat(GX().customTypes.map((c) => ({ key: "custom:" + c.id, name: c.name, desc: "Your type", look: c.look, custom: true, id: c.id })));
@@ -73,8 +153,9 @@
   root.innerHTML = `
     <div class="gx-canvas" id="gxCanvas"></div>
     <div class="gx-labels" id="gxLabels"></div>
+    <div class="gx-labels" id="gxSysLabels" hidden></div>
     <div class="gx-top">
-      <div class="gx-brand"><span class="gx-mark">◈</span><div><b>Known Universe</b><small>Imperial survey of charted worlds</small></div></div>
+      <div class="gx-brand"><span class="gx-mark">◈</span><div><b>Known Universe</b><small id="gxCrumb">Imperial survey of charted worlds</small></div></div>
       <div class="gx-search"><input id="gxSearch" type="search" placeholder="Search systems and worlds…" autocomplete="off"/><div class="gx-results" id="gxResults"></div></div>
       <div class="gx-tools">
         <button class="gx-btn" data-act="gxView" data-v="galaxy" title="Whole galaxy">Galaxy</button>
@@ -90,7 +171,7 @@
       <div class="gx-caption" id="gxCaption"></div>
     </aside>
     <aside class="gx-panel gx-right" id="gxRight" hidden></aside>
-    <div class="gx-bottom"><span id="gxScale"></span><span class="gx-hint">Drag to orbit · right-drag to pan · scroll to zoom · click a star</span></div>
+    <div class="gx-bottom"><span id="gxScale"></span><span class="gx-time" id="gxTime" hidden></span><span class="gx-hint" id="gxHint">Drag to orbit · right-drag to pan · scroll to zoom · click a star · double-click to open its system</span></div>
     <div class="gx-tip" id="gxTip" hidden></div>`;
   document.body.appendChild(root);
   const $ = (id) => document.getElementById(id);
@@ -176,6 +257,7 @@
     for (let i = 0; i < 4000; i++) { const u = Math.random() * 2 - 1, th = Math.random() * Math.PI * 2, s = Math.sqrt(1 - u * u); sp.set([s * Math.cos(th) * 900000, u * 900000, s * Math.sin(th) * 900000], i * 3); }
     sky.setAttribute("position", new T.BufferAttribute(sp, 3));
     const skyPts = new T.Points(sky, new T.PointsMaterial({ size: 1, sizeAttenuation: false, color: 0x8890a8, depthTest: false, depthWrite: false, transparent: true, opacity: 0.6 }));
+    E.skyGeo = sky; E.skyMat = skyPts.material;
     skyPts.frustumCulled = false;
     E.scene.add(skyPts);
   }
@@ -297,6 +379,7 @@
       if (moved < 3) return;
       if (E.goal) E.goal = null;
       if (p.b === 2 || p.shift) {
+        E.follow = null;
         const right = new THREE.Vector3().setFromMatrixColumn(E.camera.matrix, 0), up = new THREE.Vector3().setFromMatrixColumn(E.camera.matrix, 1);
         const k = E.view.r * 0.0013;
         E.target.addScaledVector(right, -dx * k).addScaledVector(up, dy * k);
@@ -313,6 +396,11 @@
     el.addEventListener("pointerup", up);
     el.addEventListener("pointercancel", up);
     el.addEventListener("pointerleave", () => { E.mouse = null; });
+    el.addEventListener("dblclick", (e) => {
+      if (E.mode === "system") { if (!nearestBody(e.clientX, e.clientY, 22)) { E.follow = null; flyTo(new THREE.Vector3(), E.sys.overR); } return; }
+      const s = nearestSystem(e.clientX, e.clientY, 18);
+      if (s) { GX().selSystem = s.id; GX().selPlanet = (planetsOf(s.id)[0] || {}).id || ""; enterSystem(s.id); R(); }
+    });
     el.addEventListener("wheel", (e) => {
       e.preventDefault(); E.idle = 0;
       const f = Math.exp(e.deltaY * 0.0012);
@@ -335,6 +423,7 @@
     return best;
   }
   function click(e) {
+    if (E.mode === "system") { clickSystem(e); return; }
     const s = nearestSystem(e.clientX, e.clientY, 18);
     if (s) { select(s.id); return; }
     if (E.view.r > GALAXY_LIMIT) {
@@ -360,6 +449,7 @@
     const now = performance.now(), raw = (now - (E.last || now)) / 1000, dt = Math.min(0.05, raw); E.last = now;
     E.idle += dt;
     const gx = GX(), V = E.view;
+    if (E.mode === "system") sysUpdate(raw);
     if (E.goal) {
       const g = E.goal;
       g.t = Math.min(1, g.t + Math.min(0.25, raw) / g.dur);
@@ -374,6 +464,7 @@
     E.camera.position.set(t.x + V.r * Math.sin(V.phi) * Math.sin(V.theta), t.y + V.r * Math.cos(V.phi), t.z + V.r * Math.sin(V.phi) * Math.cos(V.theta));
     E.camera.lookAt(t);
     E.camera.updateMatrixWorld();
+    if (E.mode === "system") { systemFrame(dt); if (Viewer.active) Viewer.frame(dt); return; }
     // star shaders need the pixel scale
     E.scene.traverse((o) => { if (o.material && o.material.uniforms && o.material.uniforms.scale) o.material.uniforms.scale.value = E.scale; });
 
@@ -414,7 +505,7 @@
     const tip = $("gxTip");
     if (hs) {
       const ds = distSol(hs), sel = ss && ss.id !== hs.id ? ss : null;
-      tip.innerHTML = `<b>${esc(hs.name)}</b><span>${planetsOf(hs.id).map((p) => esc(p.name)).join(" · ") || "No charted worlds"}</span><span>${fmt(ds)} ly from Sol${sel ? ` · ${fmt(distBetween(hs, sel))} ly from ${esc(sel.name)}` : ""}</span>`;
+      tip.innerHTML = `<b>${esc(hs.name)}</b><span>${planetsOf(hs.id).map((p) => esc(p.name)).join(" · ") || "No charted worlds"}</span><span>${fmt(ds)} ly from Sol${sel ? ` · ${fmt(distBetween(hs, sel))} ly from ${esc(sel.name)}` : ""}</span><span class="gx-tip-hint">Double-click to open the system</span>`;
       tip.style.transform = `translate(${E.mouse.x + 14}px, ${E.mouse.y + 14}px)`;
       tip.hidden = false;
       E.renderer.domElement.style.cursor = "pointer";
@@ -466,6 +557,177 @@
     $("gxScale").textContent = galaxyScale ? `Galaxy view · ${fmt(V.r)} ly out · Sol is ${fmt(Math.hypot(...SOL))} ly from the core` : `View radius ${fmt(V.r)} ly · focus ${fmt(fromSol)} ly from Sol`;
 
     if (Viewer.active) Viewer.frame(dt);
+  }
+
+  // ---------- system view ----------
+  function enterSystem(sysId, focusId) {
+    const s = sysById(sysId);
+    if (!s || !E.ready) return;
+    if (E.mode !== "system") E.galCam = { view: Object.assign({}, E.view), target: E.target.clone() };
+    else disposeSystem();
+    buildSystem(s);
+    E.mode = "system";
+    E.follow = null;
+    E.target.set(0, 0, 0); E.view.phi = 1.12; E.view.r = E.sys.overR * 4; E.goal = null;
+    if (focusId && E.sys.bodies.some((b) => b.id === focusId)) followBody(focusId);
+    else flyTo(new THREE.Vector3(), E.sys.overR);
+    updateChrome();
+  }
+  function leaveSystem() {
+    if (E.mode !== "system") return;
+    disposeSystem();
+    E.mode = "galaxy"; E.follow = null; E.goal = null;
+    if (E.galCam) { Object.assign(E.view, E.galCam.view); E.target.copy(E.galCam.target); }
+    const gx = GX();
+    if (gx.selPlanet && gx.selPlanet.startsWith("virt:")) gx.selPlanet = (planetsOf(gx.selSystem)[0] || {}).id || "";
+    updateChrome();
+  }
+  function rebuildSystem() {
+    const s = E.sys && sysById(E.sys.id);
+    if (!s) { leaveSystem(); return; }
+    const keep = { view: Object.assign({}, E.view), target: E.target.clone(), follow: E.follow, t: E.sys.t };
+    disposeSystem(); buildSystem(s);
+    Object.assign(E.view, keep.view); E.target.copy(keep.target); E.sys.t = keep.t;
+    E.follow = keep.follow && E.sys.bodies.some((b) => b.id === keep.follow) ? keep.follow : null;
+  }
+  function buildSystem(s) {
+    const T = THREE, L = systemLayout(s), col = new T.Color(GD.specColor(s.spec)), rad = starRadius(s);
+    const scene = new T.Scene();
+    scene.background = new T.Color(0x020308);
+    scene.add(new T.AmbientLight(0xffffff, 0.07));
+    scene.add(new T.PointLight(col.clone().lerp(new T.Color(1, 1, 1), 0.5), 2.8, 0, 0));
+    const star = new T.Mesh(new T.SphereGeometry(rad, 48, 24), new T.MeshBasicMaterial({ color: col.clone().lerp(new T.Color(1, 1, 1), 0.35) }));
+    scene.add(star);
+    [[7, 0.9], [20, 0.22]].forEach(([k, o]) => { const g = new T.Sprite(new T.SpriteMaterial({ map: E.glow, color: col, blending: T.AdditiveBlending, depthWrite: false, transparent: true, opacity: o })); g.scale.set(rad * k, rad * k, 1); scene.add(g); });
+    const sky = new T.Points(E.skyGeo, E.skyMat); sky.frustumCulled = false; scene.add(sky);
+    const labels = $("gxSysLabels"); labels.innerHTML = "";
+    const starLabel = document.createElement("button");
+    starLabel.className = "gx-label gx-label-star"; starLabel.dataset.act = "gxStar"; starLabel.innerHTML = `<b>${esc(s.name)}</b><span>${esc(s.spec || "")}</span>`;
+    labels.appendChild(starLabel);
+    const bodies = L.bodies.map((b) => {
+      const pivot = new T.Group(); pivot.rotation.set(b.incl, b.node, 0);
+      const pts = []; for (let i = 0; i < 160; i++) { const a = (i / 160) * Math.PI * 2; pts.push(new T.Vector3(Math.cos(a) * b.R, 0, Math.sin(a) * b.R)); }
+      const line = new T.LineLoop(new T.BufferGeometry().setFromPoints(pts), new T.LineBasicMaterial({ color: 0xc89a5a, transparent: true, opacity: b.virtual ? 0.16 : 0.4, depthWrite: false }));
+      pivot.add(line);
+      const holder = new T.Group(); pivot.add(holder);
+      const model = P.model(b.planet.look, b.planet.seed);
+      const sc = 0.95 * Math.pow(Math.max(0.3, b.planet.look.size || 1), 0.8);
+      model.group.scale.setScalar(sc);
+      holder.add(model.group);
+      scene.add(pivot);
+      const label = document.createElement("button");
+      label.className = "gx-label" + (b.virtual ? " gx-label-virt" : ""); label.dataset.act = "gxBody"; label.dataset.id = b.id;
+      label.innerHTML = `<b>${esc(b.planet.name)}</b><span>${b.virtual ? "Uncharted" : esc(typeName(b.planet.type))}</span>`;
+      labels.appendChild(label);
+      return Object.assign({}, b, { pivot, line, holder, model, sc, label, key: JSON.stringify(b.planet.look) + b.planet.seed, omega: (2 * Math.PI) / (yearOf(b.au, s) * 40) });
+    });
+    let belt = null;
+    if (L.belt) {
+      const n = 2600, g = new T.BufferGeometry(), a = new Float32Array(n * 3), rr = rng(hashStr(s.id) + 5);
+      for (let i = 0; i < n; i++) { const th = rr() * Math.PI * 2, rad2 = L.belt + (rr() - 0.5) * 7; a.set([Math.cos(th) * rad2, (rr() - 0.5) * 1.2, Math.sin(th) * rad2], i * 3); }
+      g.setAttribute("position", new T.BufferAttribute(a, 3));
+      belt = new T.Points(g, new T.PointsMaterial({ size: 0.35, color: 0x8a7c68, transparent: true, opacity: 0.8, depthWrite: false }));
+      scene.add(belt);
+    }
+    const S = { id: s.id, scene, star, starLabel, rad, bodies, belt, count: L.count, overR: (bodies.length ? bodies[bodies.length - 1].R : 30) * 1.75 + 14, layoutKey: layoutKey(s), t: 0, speed: E.sysSpeed || 1, paused: !!E.sysPaused };
+    E.sys = S;
+    const queue = bodies.slice();
+    const paintNext = () => { if (E.sys !== S || !queue.length) return; queue.shift().model.paint(384, 192); setTimeout(paintNext, 0); };
+    setTimeout(paintNext, 0);
+  }
+  function disposeSystem() {
+    const S = E.sys; if (!S) return;
+    S.bodies.forEach((b) => { b.model.dispose(); b.line.geometry.dispose(); b.line.material.dispose(); });
+    S.star.geometry.dispose(); S.star.material.dispose();
+    if (S.belt) { S.belt.geometry.dispose(); S.belt.material.dispose(); }
+    S.scene.traverse((o) => { if (o.isSprite) o.material.dispose(); });
+    $("gxSysLabels").innerHTML = "";
+    E.sys = null;
+  }
+  const bodyPos = (b) => { b.holder.updateWorldMatrix(true, false); return new THREE.Vector3().setFromMatrixPosition(b.holder.matrixWorld); };
+  const sysBody = (id) => E.sys && E.sys.bodies.find((b) => b.id === id);
+  function followBody(id) {
+    const b = sysBody(id); if (!b) return;
+    E.follow = id;
+    flyTo(bodyPos(b), b.sc * b.model.extent() * 3.4 + 3);
+  }
+  function sysUpdate(raw) {
+    const S = E.sys; if (!S) return;
+    if (!S.paused) S.t += Math.min(0.25, raw) * S.speed;
+    S.bodies.forEach((b) => { const a = b.phase + S.t * b.omega; b.holder.position.set(Math.cos(a) * b.R, 0, Math.sin(a) * b.R); });
+    const fb = E.follow && sysBody(E.follow);
+    if (fb) { const w = bodyPos(fb); if (E.goal) E.goal.target.copy(w); else E.target.copy(w); }
+  }
+  function screenOf(w, rect) { const v = w.clone().project(E.camera); return v.z < 1 ? { x: rect.left + ((v.x + 1) / 2) * rect.width, y: rect.top + ((1 - v.y) / 2) * rect.height } : null; }
+  function nearestBody(cx, cy, px) {
+    if (!E.sys) return null;
+    const rect = E.renderer.domElement.getBoundingClientRect();
+    let best = null, bd = px;
+    E.sys.bodies.forEach((b) => {
+      const w = bodyPos(b), sp = screenOf(w, rect); if (!sp) return;
+      const rpx = (b.sc * E.scale) / Math.max(0.01, E.camera.position.distanceTo(w));
+      const d = Math.hypot(sp.x - cx, sp.y - cy) - rpx;
+      if (d < bd) { bd = d; best = b; }
+    });
+    return best;
+  }
+  function clickSystem(e) {
+    const b = nearestBody(e.clientX, e.clientY, 22);
+    if (b) { selectBody(b.id); return; }
+    const rect = E.renderer.domElement.getBoundingClientRect(), sp = screenOf(new THREE.Vector3(), rect);
+    if (sp && Math.hypot(sp.x - e.clientX, sp.y - e.clientY) < Math.max(24, (E.sys.rad * E.scale) / E.view.r)) { E.follow = null; flyTo(new THREE.Vector3(), E.sys.overR); }
+  }
+  function selectBody(id) { GX().selPlanet = id; followBody(id); G.save(); G.render(); }
+
+  function systemFrame(dt) {
+    const S = E.sys, gx = GX();
+    S.bodies.forEach((b) => b.model.tick(dt));
+    // hover
+    const hb = E.mouse && !E.goal ? nearestBody(E.mouse.x, E.mouse.y, 18) : null;
+    S.bodies.forEach((b) => { b.line.material.opacity = b.id === gx.selPlanet || (hb && b.id === hb.id) ? 0.85 : b.virtual ? 0.16 : 0.4; });
+    const tip = $("gxTip");
+    if (hb) {
+      tip.innerHTML = `<b>${esc(hb.planet.name)}</b><span>${hb.virtual ? "Uncharted · " : ""}${esc(typeName(hb.planet.type))}</span><span>${hb.au.toFixed(2)} AU · year ${yearText(yearOf(hb.au, sysById(S.id)))}</span>`;
+      tip.style.transform = `translate(${E.mouse.x + 14}px, ${E.mouse.y + 14}px)`; tip.hidden = false;
+      E.renderer.domElement.style.cursor = "pointer";
+    } else { tip.hidden = true; E.renderer.domElement.style.cursor = ""; }
+    E.renderer.render(S.scene, E.camera);
+    // labels under each body, decluttered
+    const box = E.renderer.domElement, W = box.clientWidth, H = box.clientHeight, v = new THREE.Vector3();
+    const cands = [];
+    const add = (el, w, rWorld, pri) => {
+      v.copy(w).project(E.camera);
+      if (!gx.labels || v.z >= 1 || Math.abs(v.x) > 1.1 || Math.abs(v.y) > 1.1) { el.style.display = "none"; return; }
+      const rpx = (rWorld * E.scale) / Math.max(0.01, E.camera.position.distanceTo(w));
+      cands.push({ el, x: ((v.x + 1) / 2) * W, y: ((1 - v.y) / 2) * H + Math.min(rpx, H * 0.4) + 6, pri, w: Math.max(el.textContent.length * 6.5, 60) });
+    };
+    add(S.starLabel, new THREE.Vector3(), S.rad, 1);
+    S.bodies.forEach((b) => add(b.label, bodyPos(b), b.sc, b.id === gx.selPlanet ? 3 : hb && b.id === hb.id ? 2 : b.virtual ? 0 : 1));
+    cands.sort((a, b) => b.pri - a.pri);
+    const placed = [];
+    cands.forEach((c) => {
+      const r = { l: c.x - c.w / 2, r: c.x + c.w / 2, t: c.y, b: c.y + 26 };
+      if (c.pri < 2 && placed.some((q) => r.l < q.r && r.r > q.l && r.t < q.b && r.b > q.t)) { c.el.style.display = "none"; return; }
+      placed.push(r); c.el.style.display = ""; c.el.style.transform = `translate(${c.x}px, ${c.y}px) translate(-50%, 0)`;
+      c.el.classList.toggle("on", c.pri === 3);
+    });
+    const s = sysById(S.id);
+    $("gxScale").textContent = `${s ? s.name : ""} system · ${S.bodies.length} orbits · spacing compressed for display${S.paused ? " · paused" : ""}`;
+  }
+
+  function updateChrome() {
+    const sysMode = E.mode === "system" && E.sys;
+    const s = sysMode && sysById(E.sys.id);
+    $("gxCrumb").textContent = s ? `Galaxy › ${s.name} system` : "Imperial survey of charted worlds";
+    $("gxLabels").hidden = !!sysMode;
+    $("gxSysLabels").hidden = !sysMode;
+    $("gxHint").textContent = sysMode ? "Click a world to follow it · double-click space for the whole system · Esc returns to the galaxy" : "Drag to orbit · right-drag to pan · scroll to zoom · click a star · double-click to open its system";
+    const t = $("gxTime");
+    t.hidden = !sysMode;
+    if (sysMode) {
+      const sp = E.sys.speed, pz = E.sys.paused;
+      t.innerHTML = `<button class="gx-btn" data-act="gxTime" data-v="pause" title="${pz ? "Resume" : "Pause"} orbits">${pz ? "▶" : "❚❚"}</button>${[0.25, 1, 4, 16].map((x) => `<button class="gx-btn ${sp === x && !pz ? "on" : ""}" data-act="gxTime" data-v="${x}">×${x === 0.25 ? "¼" : x}</button>`).join("")}`;
+    }
   }
 
   // Debug/testing hook: advance the animation by hand (background tabs pause requestAnimationFrame).
@@ -530,7 +792,7 @@
     const base = `galaxy.planets.#${p.id}`, L = `${base}.look`, types = typeList(), gx = GX();
     return `
       <section class="gx-sec">
-        <div class="gx-row2"><label>World<input type="text" data-bind="${base}.name" value="${esc(p.name)}"/></label><label class="gx-narrow">Orbit<input type="text" data-bind="${base}.orbit" value="${esc(p.orbit)}" placeholder="III"/></label></div>
+        <div class="gx-row-world"><label>World<input type="text" data-bind="${base}.name" value="${esc(p.name)}"/></label><label class="gx-narrow">Orbit<input type="text" data-bind="${base}.orbit" value="${esc(p.orbit)}" placeholder="III"/></label><label class="gx-narrow">AU<input type="number" step="0.01" min="0" data-bind="${base}.au" data-type="float" value="${p.au > 0 ? p.au : ""}" placeholder="auto"/></label></div>
         <label>Allegiance<input type="text" data-bind="${base}.allegiance" value="${esc(p.allegiance)}"/></label>
         <label>Notes<textarea data-bind="${base}.notes" rows="3">${esc(p.notes)}</textarea></label>
       </section>
@@ -558,25 +820,35 @@
     const gx = GX();
     const s = gx.selSystem && sysById(gx.selSystem);
     if (gx.selSystem && !s) { gx.selSystem = ""; gx.selPlanet = ""; }
-    let p = gx.selPlanet && planetById(gx.selPlanet);
+    let p = gx.selPlanet && anyPlanet(gx.selPlanet);
     if (s && (!p || p.systemId !== s.id)) { p = planetsOf(s.id)[0] || null; gx.selPlanet = p ? p.id : ""; }
+    updateChrome();
     $("gxToggles").innerHTML = `${check("galaxy.labels", "Labels")}${check("galaxy.grid", "Grid")}`;
     const right = $("gxRight"), left = $("gxLeft");
     right.hidden = !s; left.hidden = !p;
     if (!s) { Viewer.active = false; return; }
     const body = right.querySelector(".gx-body"), keep = body ? body.scrollTop : 0;
     const pl = planetsOf(s.id), base = `galaxy.systems.#${s.id}`;
+    const inSys = E.mode === "system" && E.sys && E.sys.id === s.id;
+    const lay = inSys ? E.sys : systemLayout(s);
+    const bodyRec = p && lay.bodies.find((b) => b.id === p.id);
+    const cycle = inSys ? lay.bodies.map((b) => b.planet) : pl;
+    const orbitInfo = bodyRec ? `<div class="gx-stats gx-orbit"><div><span>Orbit</span><b>${ROMAN[bodyRec.n - 1]}</b></div><div><span>Distance</span><b>${bodyRec.au.toFixed(2)} AU</b></div><div><span>Year</span><b>${yearText(yearOf(bodyRec.au, s))}</b></div></div>` : "";
     right.innerHTML = `
       <div class="gx-head">
         <div class="gx-kicker">Star system <span class="gx-badge ${s.real ? "real" : "est"}">${s.real ? "Real star" : "Estimated position"}</span></div>
         <input class="gx-title" data-bind="${base}.name" value="${esc(s.name)}" aria-label="System name"/>
         <button class="gx-close" data-act="gxClose" title="Close (Esc)">✕</button>
-        <div class="gx-stats"><div><span>From Sol</span><b>${fmt(distSol(s))} ly</b></div><div><span>Star</span><b>${esc(s.spec || "—")}</b></div><div><span>Worlds</span><b>${pl.length}</b></div></div>
+        <div class="gx-stats"><div><span>From Sol</span><b>${fmt(distSol(s))} ly</b></div><div><span>Star</span><b>${esc(s.spec || "—")}</b></div><div><span>Worlds</span><b>${pl.length}${inSys ? ` / ${lay.bodies.length}` : ""}</b></div></div>
+        <div class="gx-actions">${inSys ? `<button class="gx-btn gx-enter" data-act="gxLeave">‹ Back to galaxy</button>` : `<button class="gx-btn gx-enter" data-act="gxEnter">View solar system ›</button>`}</div>
       </div>
       <div class="gx-body">
         ${s.lore ? `<p class="gx-lore">${esc(s.lore)}</p>` : ""}
-        <div class="gx-tabs">${pl.map((x) => `<button class="gx-tab ${p && x.id === p.id ? "on" : ""}" data-act="gxPlanet" data-id="${x.id}">${esc(planetLabel(x))}</button>`).join("")}<button class="gx-tab add" data-act="gxAddPlanet">+ World</button></div>
-        ${p ? planetSection(p) + `<div class="gx-actions"><button class="gx-btn danger" data-act="gxRmPlanet">Remove ${esc(p.name)}</button></div>` : `<p class="gx-note">No charted worlds. Add one above.</p>`}
+        <div class="gx-tabs">${cycle.map((x) => `<button class="gx-tab ${p && x.id === p.id ? "on" : ""} ${x.virtual ? "virt" : ""}" data-act="gxPlanet" data-id="${x.id}" title="${x.virtual ? "Uncharted world" : ""}">${esc(planetLabel(x))}</button>`).join("")}<button class="gx-tab add" data-act="gxAddPlanet">+ World</button></div>
+        ${orbitInfo}
+        ${!p ? `<p class="gx-note">No charted worlds. Add one above, or open the solar system to explore its uncharted orbits.</p>`
+          : p.virtual ? `<section class="gx-sec"><p class="gx-note">An uncharted world, generated to fill an empty orbit so the system feels complete. Chart it to name it, edit its look and keep it on the map.</p><button class="gx-btn" data-act="gxChart">Chart this world</button></section>`
+          : planetSection(p) + `<div class="gx-actions"><button class="gx-btn danger" data-act="gxRmPlanet">Remove ${esc(p.name)}</button></div>`}
         <details class="gx-sec"><summary>System & position</summary>
           <div class="gx-row2"><label>Star class<input type="text" data-bind="${base}.spec" value="${esc(s.spec || "")}" placeholder="G2 V"/></label></div>
           ${s.real ? `<p class="gx-note">Real star: RA ${s.ra.toFixed(3)} h, Dec ${s.dec.toFixed(2)}°, ${s.dist} ly. Edit below to override.</p>` : ""}
@@ -588,8 +860,9 @@
       </div>`;
     right.querySelector(".gx-body").scrollTop = keep;
     if (p) {
-      $("gxCaption").innerHTML = `<div class="gx-kicker">${esc(s.name)}${p.orbit ? ` ${esc(p.orbit)}` : ""}</div><h2>${esc(p.name)}</h2><div class="gx-sub">${esc(typeName(p.type))}${p.allegiance ? ` · ${esc(p.allegiance)}` : ""}</div>
-        ${pl.length > 1 ? `<div class="gx-cycle"><button class="gx-btn" data-act="gxCycle" data-d="-1">‹</button><span>${pl.indexOf(p) + 1} / ${pl.length}</span><button class="gx-btn" data-act="gxCycle" data-d="1">›</button></div>` : ""}`;
+      const ci = cycle.findIndex((x) => x.id === p.id);
+      $("gxCaption").innerHTML = `<div class="gx-kicker">${esc(s.name)}${p.orbit ? ` ${esc(p.orbit)}` : ""}${p.virtual ? ` <span class="gx-badge est">Uncharted</span>` : ""}</div><h2>${esc(p.name)}</h2><div class="gx-sub">${esc(typeName(p.type))}${p.allegiance ? ` · ${esc(p.allegiance)}` : ""}${bodyRec ? ` · ${bodyRec.au.toFixed(2)} AU` : ""}</div>
+        ${cycle.length > 1 ? `<div class="gx-cycle"><button class="gx-btn" data-act="gxCycle" data-d="-1">‹</button><span>${ci + 1} / ${cycle.length}</span><button class="gx-btn" data-act="gxCycle" data-d="1">›</button></div>` : ""}`;
       Viewer.active = true;
       Viewer.show(p);
     } else Viewer.active = false;
@@ -615,6 +888,7 @@
     if (!init()) { $("gxCanvas").innerHTML = `<div class="gx-fail">${esc(E.failed)}</div>`; return; }
     resize();
     syncSystems();
+    syncSystemScene();
     renderPanels();
     E.active = true;
     if (!E.raf) { E.last = performance.now(); frame(); }
@@ -625,6 +899,18 @@
       else setTimeout(viewImperium, 700); // sweep in from the whole galaxy to the Imperium
     }
   }
+  function syncSystemScene() {
+    if (E.mode !== "system" || !E.sys) return;
+    const s = sysById(E.sys.id);
+    if (!s) { leaveSystem(); return; }
+    if (layoutKey(s) !== E.sys.layoutKey) { rebuildSystem(); return; }
+    E.sys.bodies.forEach((b) => {
+      if (b.virtual) return;
+      const pl = planetById(b.id); if (!pl) return;
+      const k = JSON.stringify(pl.look) + pl.seed;
+      if (k !== b.key) { b.key = k; b.model.set(pl.look, pl.seed); b.sc = 0.95 * Math.pow(Math.max(0.3, pl.look.size || 1), 0.8); b.model.group.scale.setScalar(b.sc); setTimeout(() => b.model.paint(384, 192), 0); }
+    });
+  }
   function hide() { root.hidden = true; document.body.classList.remove("gx-open"); E.active = false; Viewer.active = false; }
   G.afterRender.push((tab) => { if (tab === "starmap") show(); else { lastTab = tab; if (!root.hidden) hide(); } });
   G.views.starmap = () => `<div class="card"><h2>Known Universe</h2><p>The galaxy map opens full screen.</p><button class="btn primary" data-act="gxOpen">Open the map</button></div>`;
@@ -632,7 +918,7 @@
   document.addEventListener("keydown", (e) => {
     if (root.hidden || e.key !== "Escape") return;
     if (document.activeElement && document.activeElement.id === "gxSearch" && $("gxResults").innerHTML) { hideResults(); return; }
-    if (GX().selSystem) A.gxClose(); else A.gxExit();
+    if (E.mode === "system") A.gxLeave(); else if (GX().selSystem) A.gxClose(); else A.gxExit();
   });
 
   // Live edits (sliders, colours, text) without re-rendering panels.
@@ -642,7 +928,11 @@
     if (out) out.textContent = el.value;
     if (bind.startsWith("galaxy.planets.#")) {
       const p = planetById(bind.split(".")[2].slice(1));
-      if (p && bind.includes(".look.")) Viewer.live(p);
+      if (p && bind.includes(".look.")) {
+        Viewer.live(p);
+        const b = sysBody(p.id);
+        if (b) { b.model.set(p.look, p.seed); b.sc = 0.95 * Math.pow(Math.max(0.3, p.look.size || 1), 0.8); b.model.group.scale.setScalar(b.sc); clearTimeout(b.pt); b.pt = setTimeout(() => { b.key = JSON.stringify(p.look) + p.seed; b.model.paint(384, 192); }, 220); }
+      }
       if (p && /\.(name|orbit|allegiance)$/.test(bind)) syncSystems();
     }
     if (bind.startsWith("galaxy.systems.#")) syncSystems();
@@ -657,20 +947,46 @@
   const A = G.actions;
   const R = () => { G.save(); G.render(); };
   A.gxOpen = () => { G.S.tab = "starmap"; R(); };
-  A.gxExit = () => { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); G.S.tab = lastTab === "starmap" ? "worlds" : lastTab; R(); };
+  A.gxExit = () => { leaveSystem(); if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); G.S.tab = lastTab === "starmap" ? "worlds" : lastTab; R(); };
   A.gxFull = () => { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); else document.documentElement.requestFullscreen().catch(() => G.toast("Full screen isn't available here")); };
-  A.gxView = (el) => { GX().selSystem = ""; GX().selPlanet = ""; if (el.dataset.v === "galaxy") viewGalaxy(); else viewImperium(); R(); };
+  A.gxView = (el) => { leaveSystem(); GX().selSystem = ""; GX().selPlanet = ""; if (el.dataset.v === "galaxy") viewGalaxy(); else viewImperium(); R(); };
+  A.gxEnter = () => { const gx = GX(); if (!gx.selSystem) return; enterSystem(gx.selSystem); R(); };
+  A.gxLeave = () => { const gx = GX(); leaveSystem(); const s = sysById(gx.selSystem); if (s) focusSystem(s); R(); };
+  A.gxBody = (el) => selectBody(el.dataset.id);
+  A.gxStar = () => { if (E.sys) { E.follow = null; flyTo(new THREE.Vector3(), E.sys.overR); } };
+  A.gxTime = (el) => {
+    if (!E.sys) return;
+    if (el.dataset.v === "pause") E.sys.paused = !E.sys.paused; else { E.sys.speed = +el.dataset.v; E.sys.paused = false; }
+    E.sysSpeed = E.sys.speed; E.sysPaused = E.sys.paused; updateChrome();
+  };
+  A.gxChart = () => {
+    const gx = GX(), v = anyPlanet(gx.selPlanet);
+    if (!v || !v.virtual) return;
+    const pl = { id: uid(), systemId: v.systemId, name: v.name, orbit: v.orbit, allegiance: "", notes: "", seed: v.seed, type: v.type, look: clone(v.look) };
+    gx.planets.push(pl); gx.selPlanet = pl.id;
+    if (E.follow === v.id) E.follow = pl.id;
+    syncSystems(); G.toast(`${pl.name} charted`); R();
+  };
   A.gxSelect = (el) => select(el.dataset.id);
-  A.gxGo = (el) => { hideResults(); $("gxSearch").value = ""; select(el.dataset.sys, el.dataset.planet || ""); };
-  A.gxClose = () => { GX().selSystem = ""; GX().selPlanet = ""; flyTo(E.target, Math.max(E.view.r, 260)); R(); };
-  A.gxPlanet = (el) => { GX().selPlanet = el.dataset.id; R(); };
-  A.gxCycle = (el) => { const gx = GX(), pl = planetsOf(gx.selSystem), i = pl.findIndex((p) => p.id === gx.selPlanet); gx.selPlanet = pl[(i + +el.dataset.d + pl.length) % pl.length].id; R(); };
-  const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+  A.gxGo = (el) => {
+    hideResults(); $("gxSearch").value = "";
+    const sid = el.dataset.sys, pid = el.dataset.planet || "";
+    if (E.mode === "system" && (!E.sys || E.sys.id !== sid || !pid)) leaveSystem();
+    if (pid) { GX().selSystem = sid; GX().selPlanet = pid; if (E.mode === "system") selectBody(pid); else { enterSystem(sid, pid); R(); } }
+    else select(sid);
+  };
+  A.gxClose = () => { leaveSystem(); GX().selSystem = ""; GX().selPlanet = ""; flyTo(E.target, Math.max(E.view.r, 260)); R(); };
+  A.gxPlanet = (el) => { GX().selPlanet = el.dataset.id; if (E.mode === "system") followBody(el.dataset.id); R(); };
+  A.gxCycle = (el) => {
+    const gx = GX(), list = E.mode === "system" && E.sys ? E.sys.bodies.map((b) => b.planet) : planetsOf(gx.selSystem);
+    const i = list.findIndex((p) => p.id === gx.selPlanet), next = list[(i + +el.dataset.d + list.length) % list.length];
+    gx.selPlanet = next.id; if (E.mode === "system") followBody(next.id); R();
+  };
   A.gxAddPlanet = () => {
-    const gx = GX(), s = sysById(gx.selSystem), n = planetsOf(s.id).length;
+    const gx = GX(), s = sysById(gx.selSystem), n = E.mode === "system" && E.sys ? E.sys.count : planetsOf(s.id).length;
     const keys = Object.keys(P.TYPES), type = keys[Math.floor(Math.random() * keys.length)];
     const p = { id: uid(), systemId: s.id, name: `${s.name} ${ROMAN[n] || n + 1}`, orbit: ROMAN[n] || "", allegiance: "", notes: "", seed: rnd(), type, look: clone(P.TYPES[type].look) };
-    gx.planets.push(p); gx.selPlanet = p.id; R();
+    gx.planets.push(p); gx.selPlanet = p.id; if (E.mode === "system") E.follow = p.id; R();
   };
   A.gxRmPlanet = () => { const gx = GX(), p = planetById(gx.selPlanet); if (!p || !confirm(`Remove ${p.name} from the map?`)) return; gx.planets = gx.planets.filter((x) => x !== p); gx.selPlanet = ""; syncSystems(); R(); };
   A.gxRmSystem = () => {

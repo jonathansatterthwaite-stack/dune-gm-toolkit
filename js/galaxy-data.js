@@ -18,7 +18,7 @@ window.DUNE_GALAXY = (function () {
     { star: "Sol", spec: "G2 V", ra: 0, dec: 0, dist: 0, lore: "Humanity's cradle. By the age of the Imperium, Old Terra is little more than a legend, its location half-forgotten.",
       planets: [["Old Terra", "III", "garden", "None — lost to legend", "The legendary birthworld of humanity."]] },
     { star: "Canopus", spec: "F0 II", ra: 6.3992, dec: -52.6956, dist: 310, lore: "Arrakis is the third planet of Canopus, one of the brightest stars in Terran skies.",
-      planets: [["Arrakis", "III", "desert", "Imperial fief — spice", "Dune. The only source of the spice melange, which makes space travel possible."]] },
+      planets: [["Arrakis", "III", "desert", "Imperial fief — spice", "Dune. The only source of the spice melange, which makes space travel possible.", { moons: 2 }]] },
     { star: "Delta Pavonis", spec: "G8 IV", ra: 20.1456, dec: -66.1819, dist: 19.9, lore: "Home to Caladan, the Atreides homeworld, and Harmonthep, a stop on the Zensunni wanderers' migration.",
       planets: [["Caladan", "III", "ocean", "House Atreides", "Ocean world of fishermen, pundi rice and stormy seas."], ["Harmonthep", "VI", "savanna", "Unknown", "Sixth world of Delta Pavonis; once a stop for the Zensunni wanderers."]] },
     { star: "36 Ophiuchi B", spec: "K1 V", ra: 17.2558, dec: -26.6028, dist: 19.5, lore: "Giedi Prime orbits 36 Ophiuchi B — barely a dozen light-years from Caladan, its bitter rival.",
