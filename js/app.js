@@ -595,6 +595,7 @@
         ${isPreview ? `<button class="btn primary" data-act="savePreview">Save to roster</button><button class="btn" data-act="genNpc">Re-roll</button>` : ""}
         <button class="btn" data-act="npcToConflict" data-npc="${n.id}">Add to conflict</button>
         <button class="btn" data-act="rollNpc" data-npc="${n.id}">Roll</button>
+        <button class="btn" data-act="chFromNpc" data-npc="${n.id}" title="Edit this NPC in the character creator">Open in creator</button>
         ${isPreview ? "" : `<button class="btn ghost danger" data-act="rmNpc" data-npc="${n.id}">Delete</button>`}
       </div>
     </div>`;
@@ -1051,6 +1052,10 @@
     prefillRoll(o) { Object.assign(S.roller, { side: "pc", npcId: "", focus: false, bonus: 0, autoOne: false, contest: false }, o); S.tab = "roller"; save(); render(); window.scrollTo(0, 0); },
     addSceneTrait(name, kind) { S.scene.traits.push({ id: uid(), name, rank: 1, kind: kind || "trait" }); save(); },
     addSceneTask(name, req, peril) { S.scene.tasks.push({ id: uid(), name, req, progress: 0, peril: !!peril }); save(); },
+    // conflict helpers for other modules
+    addCombatant(o) { S.conflict.combatants.push(newCombatant(o)); save(); },
+    conflictSkill: () => CONFLICT_TYPES[S.conflict.type].skill,
+    focusSkill, findNpc: (id) => findNpc(id),
     start: () => render(),
   };
 })();
