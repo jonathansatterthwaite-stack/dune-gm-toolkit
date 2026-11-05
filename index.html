@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dune GM Toolkit</title>
+  <link rel="stylesheet" href="css/styles.css?v=3" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">◈</span>
+      <div>
+        <div class="brand-title">Dune GM Toolkit</div>
+        <div class="brand-sub" id="sessionInfo"></div>
+      </div>
+    </div>
+
+    <div class="pools">
+      <div class="pool pool-threat" title="GM Threat pool (no maximum)">
+        <div class="pool-label">Threat</div>
+        <div class="pool-row">
+          <button class="pool-btn" data-act="pool" data-k="threat" data-d="-1" aria-label="Spend 1 Threat">−</button>
+          <div class="pool-value" id="threatValue">0</div>
+          <button class="pool-btn" data-act="pool" data-k="threat" data-d="1" aria-label="Add 1 Threat">+</button>
+        </div>
+      </div>
+      <div class="pool pool-momentum" title="Group Momentum pool (max 6)">
+        <div class="pool-label">Momentum <span class="pool-cap">/ 6</span></div>
+        <div class="pool-row">
+          <button class="pool-btn" data-act="pool" data-k="momentum" data-d="-1" aria-label="Spend 1 Momentum">−</button>
+          <div class="pool-value" id="momentumValue">0</div>
+          <button class="pool-btn" data-act="pool" data-k="momentum" data-d="1" aria-label="Add 1 Momentum">+</button>
+        </div>
+        <div class="pips" id="momentumPips"></div>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <button class="btn ghost" data-act="undo" id="undoBtn" title="Undo last pool change">↶ Undo</button>
+      <button class="btn" data-act="endScene" title="End scene: lose 1 Momentum, reset Resist Defeat">End scene</button>
+      <button class="btn primary" data-act="openSession">New session</button>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-tab="roller">Dice</button>
+    <button data-tab="conflict">Conflict</button>
+    <button data-tab="npcs">NPCs</button>
+    <button data-tab="scene">Scene</button>
+    <button data-tab="house">House</button>
+    <button data-tab="worlds">Worlds</button>
+    <button data-tab="hooks">Hooks</button>
+    <button data-tab="reference">Reference</button>
+  </nav>
+
+  <main id="main"></main>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <dialog id="sessionDialog">
+    <form method="dialog" class="dialog-body">
+      <h2>Start a session</h2>
+      <p class="muted">Starting Threat depends on the players' House (Core p.86).</p>
+      <label class="field">Players
+        <input type="number" id="sessPlayers" min="1" max="10" value="4" />
+      </label>
+      <label class="field">House type
+        <select id="sessHouse"></select>
+      </label>
+      <label class="check"><input type="checkbox" id="sessClearMomentum" /> Empty the Momentum pool</label>
+      <label class="check"><input type="checkbox" id="sessClearLog" /> Clear the roll log</label>
+      <div class="dialog-preview" id="sessPreview"></div>
+      <div class="dialog-actions">
+        <button value="cancel" class="btn ghost">Cancel</button>
+        <button value="ok" class="btn primary" id="sessOk">Set Threat</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="js/data.js?v=3"></script>
+  <script src="js/expansions.js?v=3"></script>
+  <script src="js/dice.js?v=3"></script>
+  <script src="js/app.js?v=3"></script>
+  <script src="js/house.js?v=3"></script>
+  <script src="js/worlds.js?v=3"></script>
+  <script>GM.start();</script>
+</body>
+</html>

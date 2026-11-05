@@ -1,0 +1,11 @@
+# Copyrighted rulebook PDFs — never commit
+\[rulebooks\]/
+*.pdf
+
+# Local Claude Code settings
+.claude/
+
+# OS clutter
+Thumbs.db
+desktop.ini
+.DS_Store
