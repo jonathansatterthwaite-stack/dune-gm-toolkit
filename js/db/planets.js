@@ -32,6 +32,14 @@
   add({ name: "Wallach IX", system: "Laoujin", moons: "Three", habitable: "Class IV", ruler: "Bene Gesserit", exports: "Bene Gesserit training and knowledge", population: "Dense cities, no one outside them", languages: "Galach and secret Bene Gesserit codes",
     places: places("Cliff Walls, the Mother School"), text: "Austere world of the Bene Gesserit Mother School.", src: "Core p.83" });
 
+  // ---- Power and Pawns gazetteer entries
+  add({ name: "Ginaz", system: "Junagadh", moons: "One", habitable: "Class V", ruler: "Swordmasters of Ginaz", note: "House Ginaz is defunct; the Council of Veterans now rules (Richelieu sector)",
+    exports: "Hardwoods, chemicals, poisons, Swordmasters", population: "Light, living on the islands", languages: "Galach, Ginaz, Swordmaster battle language",
+    places: places("Ecazi Palace, Ginaz Archipelagos, Ginaz Archives, Ginaz School Administration Facility, Ginaz Academy Island"),
+    text: "A water world, nine-tenths ocean, whose jungle and farmland archipelagos are home to the Swordmaster school.", src: "Power and Pawns p.50" });
+  add({ name: "Tupile", habitable: "Unknown, probably Class V", ruler: "Spacing Guild", note: "Its location is a Guild secret", exports: "None", population: "Unknown numbers of exiles and refugees", languages: "Galach and others",
+    text: "The near-mythical sanctuary where exiled and fallen Houses vanish. The Guild knows it as a small group of habitable planets in one system.", src: "Power and Pawns p.108" });
+
   // ---- Homeworlds and holdings of The Great Game's Houses
   // [name, star system, designation, House, vassal House, summary, page]
   const gg = [
