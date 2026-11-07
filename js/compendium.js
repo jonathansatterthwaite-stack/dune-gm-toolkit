@@ -36,6 +36,39 @@
     document.head.appendChild(s);
   }
   const FT = () => (window.DUNE_FULLTEXT && window.DUNE_FULLTEXT.entries) || {};
+
+  // ---- art: js/db/art.local.js (tools/extract-art.py) adds the "art" table and DUNE_ART for the creator's faction
+  // cards. Same rule as the book text: only loaded on your own computer.
+  if (!window.DUNE_ART && LOCAL) {
+    const s = document.createElement("script");
+    s.src = "js/db/art.local.js?t=" + Date.now();
+    s.onload = () => { if (G.S.tab === "compendium" || G.S.tab === "characters") G.render(); };
+    s.onerror = () => {};
+    document.head.appendChild(s);
+  }
+  // entry id → art rows that show it (resolved from each image's "table:Name" links; rebuilt when the table changes)
+  let artIdx = {}, artKey = "";
+  function artFor(r) {
+    const arts = DB.rows("art");
+    if (!arts.length || r._t === "art") return [];
+    const key = arts.length + ":" + DB.rows("npcs").length;
+    if (key !== artKey) {
+      artIdx = {}; artKey = key;
+      arts.forEach((a) => (a.links || []).forEach((l) => { const i = l.indexOf(":"), t = findRow(l.slice(0, i), l.slice(i + 1)); if (t) (artIdx[t.id] = artIdx[t.id] || []).push(a); }));
+    }
+    return artIdx[r.id] || [];
+  }
+  const artFigure = (a, big) => `<figure class="db-art-fig${big ? " big" : ""} k-${esc(a.kind)}"><img src="${esc(a.file)}" alt="${esc(a.name)}" width="${a.w}" height="${a.h}" decoding="async"/>
+    ${big ? "" : `<figcaption><a class="db-link" data-act="dbGo" data-id="${esc(a.id)}">${esc(a.name)}</a><br/><span class="muted">${esc(a.src)}</span></figcaption>`}</figure>`;
+  function artDetail(r) {
+    const shows = (r.links || []).map((l) => { const i = l.indexOf(":"), t = findRow(l.slice(0, i), l.slice(i + 1)); return t ? `<a class="db-link" data-act="dbGo" data-id="${esc(t.id)}">${esc(t.name)}</a> <span class="muted">(${esc(meta(t._t).title)})</span>` : esc(l.slice(l.indexOf(":") + 1)); });
+    return `<div class="card-head"><div><h2>${esc(r.name)}</h2><div class="muted small">Art · ${esc(r.kind)}</div></div>${tag(r)}</div>
+      <div class="db-art-detail">${artFigure(r, true)}
+        <dl class="kv"><dt>Shows</dt><dd>${shows.join("<br/>") || "—"}</dd>
+        <dt>Printed on</dt><dd>${esc([r.src].concat(r.also || []).join(", "))}</dd>
+        <dt>Size</dt><dd>${r.w} × ${r.h} px</dd></dl></div>
+      <p class="pg">Cut from your PDF. Personal use — this image is only loaded on your own computer.</p>`;
+  }
   const pageRow = (book, page) => rowsOf("pages").find((p) => p.bookKey === book && p.page === page) || null;
   const bookHTML = (text) => text.split(/\n{2,}/).map((p) => `<p>${esc(p).replace(/\n/g, "<br/>")}</p>`).join("");
 
@@ -172,7 +205,8 @@
   function detailHTML(r) {
     if (!r) return `<div class="hint">Pick an entry to see it here.</div>`;
     if (r._t === "pages") return pageDetail(r);
-    const t = r._t, m = meta(t);
+    if (r._t === "art") return artDetail(r) + `<div class="c-actions"><a class="btn" href="${esc(r.file)}" target="_blank" rel="noopener">Open full size</a></div>`;
+    const t = r._t, m = meta(t), arts = artFor(r);
     let body = "";
     if (t === "npcs") body = npcBlock(r);
     else { const spec = FIELDS[t]; body = `<dl class="kv">${spec ? spec.map((f) => fieldHTML(r, f)).join("") : genericFields(r)}</dl>`; }
@@ -193,6 +227,7 @@
       if (who.length) extra += `<h4>Carried by</h4><p>${who.map((n) => link("npcs", n.name)).join(", ")}</p>`;
     }
     return `<div class="card-head"><div><h2>${esc(r.name)}</h2><div class="muted small">${esc(m.title)}${r.title ? ` · ${esc(r.title)}` : ""}${r.kind && t === "npcs" ? ` · ${esc(r.kind)}` : ""}</div></div>${tag(r)}</div>
+      ${arts.length ? `<div class="db-art">${arts.map((a) => artFigure(a)).join("")}</div>` : ""}
       ${r.text ? `<p>${esc(r.text)}</p>` : ""}
       ${body}${extra}
       <p class="pg">Source: ${esc(r.src || "—")}${r.book && r.book !== "Homebrew" && !FT()[r.id] ? " — summary written for this tool; see the book for the full text." : ""}</p>

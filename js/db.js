@@ -26,6 +26,8 @@ window.DUNE_DB = (function () {
     traits:        { group: "World", title: "Traits", desc: "Traits used in the books — reputations, House traits, conditions and scene traits.", cols: [["kind", "Kind"]], facet: "kind" },
     // only present when js/db/fulltext.local.js has been generated from your own PDFs (tools/build-fulltext.js)
     pages:         { group: "Books", title: "Book pages", desc: "Every page of the four books as text, from your own PDFs. Local only — never published.", cols: [["heading", "Starts with"]], facet: "" },
+    // only present when js/db/art.local.js has been generated from your own PDFs (tools/extract-art.py)
+    art:           { group: "Books", title: "Art", desc: "Character art, House banners and crests cut from your own PDFs, linked to the entries they show. Local only — never published.", cols: [["kind", "Kind"]], facet: "kind" },
   };
   const ORDER = Object.keys(META);
   const T = {};

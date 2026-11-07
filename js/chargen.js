@@ -167,14 +167,7 @@
     </article>`;
   }
 
-  // local-only art manifest (same rule as the book text: never loaded on the public site)
-  if (!window.DUNE_ART && (location.protocol === "file:" || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname))) {
-    const s = document.createElement("script");
-    s.src = "js/db/art.local.js?t=" + Date.now();
-    s.onload = () => { if (G.S.tab === "characters" && CS().wiz) G.render(); };
-    s.onerror = () => {};
-    document.head.appendChild(s);
-  }
+  // the local-only art manifest (window.DUNE_ART) is loaded by js/compendium.js, which re-renders this tab when it arrives
 
   function archCard(a, c, f) {
     const info = ARCH[a.name] || ["", ""], book = bookArch(a.name), on = c.archetype === a.name;
