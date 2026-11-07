@@ -118,6 +118,7 @@
         <label class="field">Name<input type="text" data-bind="${base}.name" value="${esc(c.name)}" placeholder="e.g. Kara Molay"/></label>
         <label class="field">Concept<input type="text" data-bind="${base}.concept" value="${esc(c.concept)}" placeholder="One line: who are they and what do they do for the House?"/></label>
       </div>
+      <div class="cg-fitblock">
       <div class="cg-archbar">
         <h3 class="cg-sub">Faction template <span class="muted small">(optional)</span></h3>
         <div class="cg-arrows"><button class="btn small" data-act="cgScroll" data-strip="cgFacStrip" data-d="-1" aria-label="Scroll left">◀</button><button class="btn small" data-act="cgScroll" data-strip="cgFacStrip" data-d="1" aria-label="Scroll right">▶</button></div>
@@ -126,7 +127,8 @@
       <div class="cg-strip" id="cgFacStrip"><section class="cg-group">
         <div class="cg-banner"><div class="over">Step one</div><div class="title">Factions</div><p>Templates for characters shaped by the great schools and powers of the Imperium. Each adds a trait and required talents on top of your archetype.</p><span class="pg">Core p.109</span></div>
         ${facs.map((f) => facCard(f, c)).join("")}
-      </section></div>`;
+      </section></div>
+      </div>`;
   }
   const FAC_INFO = {
     "": "Most characters are agents of their House, trained in its service rather than by an outside school.",
@@ -196,15 +198,15 @@
     const members = (g) => C.ARCHETYPES.filter((a) => (GROUPS.slice(0, 5).some((x) => x.key === g.key) ? a.book === "Core" && a.primary === g.key : a.book === g.key));
     const glance = `<table class="cg-glance"><thead><tr><th>Archetype</th><th>Primary skill</th><th>Secondary skill</th></tr></thead><tbody>
       ${C.ARCHETYPES.slice().sort((a, b) => a.name.localeCompare(b.name)).map((a) => `<tr class="${c.archetype === a.name ? "on" : ""}" data-act="cgArch" data-a="${esc(a.name)}"><td><b>${esc(a.name)}</b>${a.book !== "Core" ? ` <span class="muted small">${a.book === "Great Game" ? "GG" : "S&D"}</span>` : ""}</td><td>${a.primary}</td><td>${a.secondary}</td></tr>`).join("")}</tbody></table>`;
-    return `<div class="cg-archbar">
+    return `<div class="cg-fitblock"><div class="cg-archbar">
         <div class="cg-jump">${GROUPS.map((g) => `<button class="chip" data-act="cgJump" data-g="${esc(g.key)}">${esc(g.title)}</button>`).join("")}</div>
         <div class="cg-arrows"><button class="btn small" data-act="cgGlance">${w.glance ? "Show the archetypes" : "Archetypes at a glance"}</button><button class="btn small" data-act="cgScroll" data-d="-1" aria-label="Scroll left">◀</button><button class="btn small" data-act="cgScroll" data-d="1" aria-label="Scroll right">▶</button></div>
       </div>
       ${w.glance ? glance : `<div class="cg-strip" id="cgStrip">${GROUPS.map((g) => `<section class="cg-group" data-g="${esc(g.key)}">
           <div class="cg-banner"><div class="over">${esc(g.over)}</div><div class="title">${esc(g.title)}</div><p>${esc(g.intro)}</p><span class="pg">${esc(g.src)}</span></div>
           ${members(g).map((a) => archCard(a, c, f)).join("")}
-        </section>`).join("")}</div>
-        <p class="hint">Scroll sideways through the archetypes${window.DUNE_FULLTEXT ? " (descriptions from your copy of the books)" : ""}. Click one to choose it. Any archetype can be reflavoured to fit your concept — check with your gamemaster.</p>`}`;
+        </section>`).join("")}</div>`}</div>
+        ${w.glance ? "" : `<p class="hint cg-strip-hint">Scroll sideways through the archetypes${window.DUNE_FULLTEXT ? " (descriptions from your copy of the books)" : ""}. Click one to choose it. Any archetype can be reflavoured to fit your concept — check with your gamemaster.</p>`}`;
   }
 
   function screenSkills(c) {
@@ -360,13 +362,85 @@
   let stripLeft = {}, scrollToChosen = false, scrollTop = false;
   G.afterRender.push((tab) => {
     if (tab !== "characters" || !CS().wiz) return;
+    fitStrips();   // size the strips first, so card positions are final before scrolling to one
     document.querySelectorAll(".cg-strip").forEach((strip) => {
       if (stripLeft[strip.id] != null) strip.scrollLeft = stripLeft[strip.id];
-      else if (scrollToChosen) { const on = strip.querySelector(".cg-arch.on"); if (on) strip.scrollLeft = on.offsetLeft - strip.offsetLeft - 16; }
+      else if (scrollToChosen) { const on = strip.querySelector(".cg-arch.on"); if (on && on.offsetLeft - strip.offsetLeft + on.offsetWidth > strip.clientWidth) strip.scrollLeft = on.offsetLeft - strip.offsetLeft - 16; }
     });
-    if (scrollTop) window.scrollTo(0, 0);
+    if (scrollTop) {
+      // on a fitted screen, open the Archetype step with its strip filling the view
+      const block = STEPS[W().step].key === "archetype" && document.documentElement.classList.contains("cg-fit") && document.querySelector(".cg-fitblock");
+      if (block) block.scrollIntoView({ block: "start" }); else window.scrollTo(0, 0);
+    }
     stripLeft = {}; scrollToChosen = false; scrollTop = false;
   });
+  // Leaving the wizard (or the tab) drops the wide, fitted layout.
+  G.afterRender.push((tab) => { if (tab !== "characters" || !CS().wiz) fitStrips(); });
+
+  // ---------- fit the strips to the screen ----------
+  // Each strip and its controls (.cg-fitblock) fill the window under the sticky header, with Back/Next
+  // pinned at the bottom; cards grow with the height. Only on screens big enough to make that worthwhile.
+  const root = document.documentElement;
+  const headerH = () => { const h = document.querySelector(".topbar"); return h ? h.getBoundingClientRect().height : 0; };
+  function fitStrips() {
+    const on = G.S.tab === "characters" && !!CS().wiz && !!document.querySelector(".cg-wrap");
+    const fit = on && innerWidth >= 1000 && innerHeight >= 620;
+    root.classList.toggle("cg-on", on);
+    root.classList.toggle("cg-fit", fit);
+    const hh = headerH();
+    root.style.setProperty("--cg-header", hh + "px");
+    const nav = document.querySelector(".cg-nav"), navH = nav ? nav.offsetHeight : 0;
+    document.querySelectorAll(".cg-fitblock").forEach((b) => {
+      const strip = b.querySelector(".cg-strip"); if (!strip) return;
+      const cards = strip.querySelectorAll(".cg-arch:not(.cg-facard)");
+      cards.forEach((card) => (card.style.flexBasis = ""));
+      if (!fit) { strip.style.removeProperty("--h"); strip.style.removeProperty("--hn"); return; }
+      const other = b.offsetHeight - strip.offsetHeight;   // the heading, buttons and hint above the strip
+      const h = Math.max(440, Math.floor(innerHeight - hh - navH - other - 20));
+      strip.style.setProperty("--h", h + "px"); strip.style.setProperty("--hn", (h / 720).toFixed(3));
+      // widen any archetype card whose text doesn't fit the height (long book descriptions), up to a limit
+      cards.forEach((card) => {
+        let w = card.offsetWidth, guard = 0;
+        while (card.scrollHeight > card.clientHeight + 1 && w < 620 && guard++ < 14) { w += 30; card.style.flexBasis = w + "px"; }
+      });
+    });
+  }
+  let resizeT = 0;
+  window.addEventListener("resize", () => { clearTimeout(resizeT); resizeT = setTimeout(fitStrips, 120); });
+
+  // ---------- the mouse wheel scrolls a fitted strip sideways ----------
+  // Only once the whole strip is on screen; at either end the wheel goes back to scrolling the page.
+  function glide(strip, target) {
+    strip._cgTarget = target;
+    const finish = () => { cancelAnimationFrame(strip._cgAnim); if (strip._cgTarget != null) strip.scrollLeft = strip._cgTarget; strip._cgAnim = 0; strip._cgTarget = null; };
+    // if the page isn't getting animation frames (a hidden window), jump straight there
+    clearTimeout(strip._cgSafety);
+    strip._cgSafety = setTimeout(() => { if (strip._cgAnim && performance.now() - (strip._cgLast || 0) > 90) finish(); }, 120);
+    if (strip._cgAnim) return;
+    strip._cgLast = performance.now();
+    const step = () => {
+      strip._cgLast = performance.now();
+      const d = strip._cgTarget - strip.scrollLeft;
+      if (Math.abs(d) < 0.6) return finish();
+      strip.scrollLeft += d * 0.22;
+      strip._cgAnim = requestAnimationFrame(step);
+    };
+    strip._cgAnim = requestAnimationFrame(step);
+  }
+  document.addEventListener("wheel", (e) => {
+    if (!root.classList.contains("cg-fit") || e.ctrlKey) return;
+    const strip = e.target.closest && e.target.closest(".cg-strip"); if (!strip) return;
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;            // a trackpad's own sideways swipe
+    const card = e.target.closest(".cg-arch");                      // let an overflowing card scroll its text first
+    if (card && card.scrollHeight > card.clientHeight + 1 && ((e.deltaY < 0 && card.scrollTop > 0) || (e.deltaY > 0 && card.scrollTop + card.clientHeight < card.scrollHeight - 1))) return;
+    const r = strip.getBoundingClientRect(), nav = document.querySelector(".cg-nav");
+    if (r.top < headerH() - 2 || r.bottom > innerHeight - (nav ? nav.offsetHeight : 0) + 2) return;   // not all on screen yet
+    const dy = e.deltaMode === 1 ? e.deltaY * 40 : e.deltaMode === 2 ? e.deltaY * strip.clientWidth : e.deltaY;
+    const max = strip.scrollWidth - strip.clientWidth, from = strip._cgTarget != null ? strip._cgTarget : strip.scrollLeft;
+    if ((dy < 0 && from <= 0) || (dy > 0 && from >= max - 1)) return;   // at an end: hand back to the page
+    e.preventDefault();
+    glide(strip, Math.max(0, Math.min(max, from + dy * 1.4)));
+  }, { passive: false });
   const keepStrip = () => { stripLeft = {}; document.querySelectorAll(".cg-strip").forEach((s) => (stripLeft[s.id] = s.scrollLeft)); };
 
   // ---------- actions ----------
