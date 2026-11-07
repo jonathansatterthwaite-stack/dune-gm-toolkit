@@ -232,6 +232,7 @@
     const cs = CS(), f = cs.filter;
     const list = cs.list.filter((c) => f === "all" || (f === "pc" && isPC(c.kind)) || (f === "sup" && isSup(c.kind)) || (f === "npc" && c.kind.startsWith("npc")));
     return `<div class="card">
+      ${G.chargen ? `<div class="cg-cta"><div><b>New player?</b> <span class="muted small">Walk through creation one screen at a time, with the archetypes laid out like the book.</span></div><button class="btn primary" data-act="cgStart">Guided character creation</button></div>` : ""}
       <div class="card-head"><h2>Characters</h2>${G.seg("chars.filter", [{ v: "all", l: "All" }, { v: "pc", l: "Players" }, { v: "sup", l: "Supporting" }, { v: "npc", l: "NPCs" }])}</div>
       <div class="mini" style="margin-bottom:0.6rem"><span class="small muted">New:</span>${Object.keys(C.KINDS).map((k) => `<button class="btn small ${isPC(k) ? "primary" : ""}" data-act="chNew" data-k="${k}" title="${esc(C.KINDS[k].desc)}">${esc(C.KINDS[k].name)}</button>`).join("")}</div>
       <div class="ch-roster">${list.map((c) => { const { issues } = validate(c); return `<button class="ch-chip ${c.id === cs.sel ? "on" : ""}" data-act="chOpen" data-id="${c.id}"><b>${esc(c.name || "Unnamed")}</b><span>${esc(C.KINDS[c.kind].name)}${c.archetype ? ` · ${esc(c.archetype)}` : ""}</span>${issues ? `<i class="ch-dot" title="${issues} rule issue(s)"></i>` : ""}</button>`; }).join("") || `<span class="empty">No characters yet — start one above, or open a generated NPC from the NPCs tab.</span>`}</div>
@@ -365,6 +366,7 @@
   }
 
   G.views.characters = () => {
+    if (CS().wiz && G.chargen && CS().list.some((c) => c.id === CS().wiz.id)) return G.chargen.view();
     const ch = cur();
     return `${roster()}${ch ? `<div class="ch-layout"><section>${editor(ch)}</section><section>${sidebar(ch)}</section></div>` : ""}`;
   };
@@ -455,4 +457,7 @@
     ch.details.notes = n.notes || "";
     CS().list.unshift(ch); CS().sel = ch.id; CS().rollDrive = ""; G.S.tab = "characters"; R();
   };
+
+  // Rule helpers shared with the guided creator (js/chargen.js).
+  G.chars = { blank, validate, applyArchetype, autofill, drives, bestDrive, assetQuota, sheetHTML, arch, fac, talentDef, cur, CS, ALL_DRIVES, clone };
 })();

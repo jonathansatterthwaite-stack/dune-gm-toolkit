@@ -30,7 +30,7 @@
   if (fullState === "loading") {
     const s = document.createElement("script");
     s.src = "js/db/fulltext.local.js?t=" + Date.now();
-    s.onload = () => { fullState = window.DUNE_FULLTEXT ? "ready" : "missing"; if (G.S.tab === "compendium") G.render(); };
+    s.onload = () => { fullState = window.DUNE_FULLTEXT ? "ready" : "missing"; if (G.S.tab === "compendium" || G.S.tab === "characters") G.render(); };
     s.onerror = () => { fullState = "missing"; if (G.S.tab === "compendium") G.render(); };
     document.head.appendChild(s);
   }
