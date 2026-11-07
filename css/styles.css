@@ -1,4 +1,39 @@
+/* Themes. The default is "Imperial": smoky charcoal with gold line work (css/imperial.css draws the ornaments).
+   html[data-theme="light"] switches to "Parchment", the original light look. */
 :root {
+  --bg: #141116;
+  --surface: #1c181d;
+  --surface-2: #252026;
+  --border: #4a3e33;
+  --ink: #efe6d6;
+  --muted: #a89a88;
+  --accent: #e2c391;          /* the gold of the line work */
+  --accent-ink: #1a1510;
+  --gold: #e2c391;
+  --gold-strong: #f0d6a8;
+  --gold-dim: #8c7656;
+  --line: rgba(226, 195, 145, 0.42);       /* frames and rules */
+  --line-faint: rgba(226, 195, 145, 0.16);
+  --orn: rgba(226, 195, 145, 0.85);        /* ornaments */
+  --crimson: #c0334a;
+  --cloud: #2a50a6;
+  --cloud-light: #7ea5ee;
+  --threat: #ec6b7c;
+  --threat-soft: rgba(192, 51, 74, 0.16);
+  --momentum: #86aef0;
+  --momentum-soft: rgba(42, 80, 166, 0.22);
+  --good: #7fc48b;
+  --good-soft: rgba(127, 196, 139, 0.14);
+  --crit: #f0c35f;
+  --crit-soft: rgba(240, 195, 95, 0.14);
+  --on-accent: #1a1510;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.35);
+  --radius: 6px;
+  --serif: "Bodoni MT", "Bodoni 72", Didot, "Playfair Display", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  --sans: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
   --bg: #f3ebdd;
   --surface: #fffaf2;
   --surface-2: #f7efe2;
@@ -7,6 +42,15 @@
   --muted: #7a6a58;
   --accent: #b9581b;
   --accent-ink: #ffffff;
+  --gold: #9a7334;
+  --gold-strong: #7a5a24;
+  --gold-dim: #c2a676;
+  --line: rgba(154, 115, 52, 0.45);
+  --line-faint: rgba(154, 115, 52, 0.18);
+  --orn: rgba(154, 115, 52, 0.75);
+  --crimson: #a8322d;
+  --cloud: #2a50a6;
+  --cloud-light: #5f88d8;
   --threat: #a8322d;
   --threat-soft: #f6dcd8;
   --momentum: #2f6db5;
@@ -15,34 +59,9 @@
   --good-soft: #dcefdc;
   --crit: #8a5a00;
   --crit-soft: #fbe7b5;
+  --on-accent: #ffffff;
   --shadow: 0 1px 2px rgba(60, 40, 20, 0.08), 0 4px 14px rgba(60, 40, 20, 0.06);
-  --radius: 10px;
-  --serif: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
-  --sans: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
   color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #15110d;
-    --surface: #211a14;
-    --surface-2: #2a221a;
-    --border: #3d3226;
-    --ink: #efe4d2;
-    --muted: #a8957d;
-    --accent: #e3843f;
-    --accent-ink: #1a120b;
-    --threat: #e8645b;
-    --threat-soft: #3d1f1c;
-    --momentum: #6aa6f5;
-    --momentum-soft: #1c2a3d;
-    --good: #72b97c;
-    --good-soft: #1d3020;
-    --crit: #f2c25b;
-    --crit-soft: #3b2e12;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 14px rgba(0, 0, 0, 0.25);
-    color-scheme: dark;
-  }
 }
 
 * { box-sizing: border-box; }
@@ -546,8 +565,8 @@ body.gx-open { overflow: hidden; }
 .db-deep { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; margin: 0.6rem 0 0; }
 
 /* ---------- Guided character creation (book-style) ---------- */
-:root { --parch: #fbf3e2; --parch-2: #f2e3c4; --parch-band: #ead7b2; --parch-edge: #d9c19a; --book-red: #c0561e; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --parch: #241c14; --parch-2: #2c2218; --parch-band: #3a2c1d; --parch-edge: #4d3a26; --book-red: #ec8a4a; } }
+:root { --parch: #1f1a1f; --parch-2: #272027; --parch-band: #2f262c; --parch-edge: #5b4a39; --book-red: #e2b679; }
+:root[data-theme="light"] { --parch: #fbf3e2; --parch-2: #f2e3c4; --parch-band: #ead7b2; --parch-edge: #d9c19a; --book-red: #c0561e; }
 .cg-cta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.7rem 0.9rem; margin-bottom: 0.8rem; border-radius: 8px; background: var(--parch-2); border: 1px solid var(--parch-edge); }
 .cg-wrap { max-width: 1180px; margin: 0 auto; }
 .cg-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 0.6rem; margin-bottom: 0.6rem; }
@@ -557,7 +576,7 @@ body.gx-open { overflow: hidden; }
 .cg-steps .n { display: inline-grid; place-items: center; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--surface-2); font-weight: 700; font-size: 0.8rem; }
 .cg-steps button.done .n { background: var(--good-soft); color: var(--good); }
 .cg-steps button.on { border-color: var(--book-red); background: var(--parch-2); }
-.cg-steps button.on .n { background: var(--book-red); color: #fff; }
+.cg-steps button.on .n { background: var(--book-red); color: var(--on-accent); }
 .cg-screen { background: linear-gradient(180deg, var(--parch), var(--surface) 240px); border-color: var(--parch-edge); }
 .cg-h { margin: -0.2rem 0 0.8rem; }
 .cg-h .over, .cg-banner .over { font-family: var(--serif); font-variant: small-caps; letter-spacing: 0.12em; font-size: 1.05rem; color: var(--book-red); }
@@ -599,7 +618,7 @@ body.gx-open { overflow: hidden; }
 .cg-diamonds li::before { content: ""; position: absolute; left: 0.15rem; top: 0.42em; width: 0.42rem; height: 0.42rem; border: 1.5px solid var(--book-red); transform: rotate(45deg); }
 .cg-diamonds b { font-weight: 700; }
 .cg-stamp, .cg-suits { position: absolute; top: -0.55rem; right: 0.7rem; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; padding: 1px 8px; border-radius: 999px; }
-.cg-stamp { background: var(--book-red); color: #fff; }
+.cg-stamp { background: var(--book-red); color: var(--on-accent); }
 .cg-suits { background: var(--good-soft); color: var(--good); border: 1px solid var(--good); }
 .cg-facard { flex-basis: 300px; min-height: 680px; padding-bottom: 0.5rem; }
 .cg-facard .cg-fac-text { position: relative; z-index: 1; }
@@ -715,7 +734,7 @@ html.cg-fit .cg-emblem { width: clamp(120px, calc(var(--h) * 0.2), 190px); heigh
 .tl-forkline { position: absolute; top: 2.1rem; bottom: 36px; border-left: 2px dashed var(--accent); padding-left: 0.3rem; z-index: 1; }
 .tl-forkline button { font-size: 0.78rem; white-space: nowrap; background: var(--surface); border-radius: 999px; padding: 1px 8px; border: 1px solid var(--accent); }
 .tl-center { position: absolute; left: 50%; top: -0.3rem; bottom: -0.3rem; width: 0; border-left: 2px solid var(--crit); z-index: 4; pointer-events: none; }
-.tl-center span { position: absolute; top: -1.45rem; left: 0; transform: translateX(-50%); background: var(--crit); color: #fff; font-weight: 800; font-size: 0.85rem; padding: 1px 10px; border-radius: 999px; white-space: nowrap; }
+.tl-center span { position: absolute; top: -1.45rem; left: 0; transform: translateX(-50%); background: var(--crit); color: var(--on-accent); font-weight: 800; font-size: 0.85rem; padding: 1px 10px; border-radius: 999px; white-space: nowrap; }
 .tl-viewport { margin-top: 1.7rem; }
 .tl-step { position: absolute; top: 50%; transform: translateY(-50%); z-index: 5; width: 2rem; height: 2rem; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--ink); cursor: pointer; box-shadow: var(--shadow); }
 .tl-step.prev { left: 0.3rem; } .tl-step.next { right: 0.3rem; }

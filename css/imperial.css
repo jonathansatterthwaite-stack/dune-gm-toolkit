@@ -1,0 +1,122 @@
+/* Imperial theme: the ornaments and the dressing of shared components.
+   GENERATED from tools/gen-imperial.py — edit that, then run: python tools/gen-imperial.py
+   All shapes are original line work in the spirit of the style references (pointed arches, eight-point stars,
+   stepped corners, gold on smoky charcoal, blue-and-gold clouds). Colors come from the theme tokens in
+   css/styles.css, so the Parchment theme gets the same ornaments in its own colors. */
+:root {
+  --i-corner-tl: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22%3E%3Cg fill=%22none%22 stroke=%22%23fff%22 stroke-width=%221.4%22 transform=%22rotate(0 20 20)%22%3E%0A%3Cpath d=%22M1.5 39 V1.5 H39%22/%3E%3Cpath d=%22M6 30 V6 H30%22/%3E%3Cpath d=%22M6 1.5 L10.5 6 L6 10.5 L1.5 6 Z%22/%3E%3Cpath d=%22M11 20 V11 H20%22/%3E%3Cpath d=%22M14.5 14.5 h4 v4 h-4 z%22/%3E%3C/g%3E%3C/svg%3E");
+  --i-corner-tr: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22%3E%3Cg fill=%22none%22 stroke=%22%23fff%22 stroke-width=%221.4%22 transform=%22rotate(90 20 20)%22%3E%0A%3Cpath d=%22M1.5 39 V1.5 H39%22/%3E%3Cpath d=%22M6 30 V6 H30%22/%3E%3Cpath d=%22M6 1.5 L10.5 6 L6 10.5 L1.5 6 Z%22/%3E%3Cpath d=%22M11 20 V11 H20%22/%3E%3Cpath d=%22M14.5 14.5 h4 v4 h-4 z%22/%3E%3C/g%3E%3C/svg%3E");
+  --i-corner-br: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22%3E%3Cg fill=%22none%22 stroke=%22%23fff%22 stroke-width=%221.4%22 transform=%22rotate(180 20 20)%22%3E%0A%3Cpath d=%22M1.5 39 V1.5 H39%22/%3E%3Cpath d=%22M6 30 V6 H30%22/%3E%3Cpath d=%22M6 1.5 L10.5 6 L6 10.5 L1.5 6 Z%22/%3E%3Cpath d=%22M11 20 V11 H20%22/%3E%3Cpath d=%22M14.5 14.5 h4 v4 h-4 z%22/%3E%3C/g%3E%3C/svg%3E");
+  --i-corner-bl: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22%3E%3Cg fill=%22none%22 stroke=%22%23fff%22 stroke-width=%221.4%22 transform=%22rotate(270 20 20)%22%3E%0A%3Cpath d=%22M1.5 39 V1.5 H39%22/%3E%3Cpath d=%22M6 30 V6 H30%22/%3E%3Cpath d=%22M6 1.5 L10.5 6 L6 10.5 L1.5 6 Z%22/%3E%3Cpath d=%22M11 20 V11 H20%22/%3E%3Cpath d=%22M14.5 14.5 h4 v4 h-4 z%22/%3E%3C/g%3E%3C/svg%3E");
+  --i-star: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Cpolygon fill=%22%23fff%22 points=%2250.00,0.00 61.48,22.28 85.36,14.64 77.72,38.52 100.00,50.00 77.72,61.48 85.36,85.36 61.48,77.72 50.00,100.00 38.52,77.72 14.64,85.36 22.28,61.48 0.00,50.00 22.28,38.52 14.64,14.64 38.52,22.28%22/%3E%3C/svg%3E");
+  --i-octa: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Cg fill=%22none%22 stroke=%22%23fff%22 stroke-width=%225%22%3E%0A%3Crect x=%2220%22 y=%2220%22 width=%2260%22 height=%2260%22/%3E%3Crect x=%2220%22 y=%2220%22 width=%2260%22 height=%2260%22 transform=%22rotate(45 50 50)%22/%3E%3Ccircle cx=%2250%22 cy=%2250%22 r=%2215%22/%3E%3C/g%3E%3C/svg%3E");
+  --i-arch: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 160%22 preserveAspectRatio=%22none%22%3E%3Cg fill=%22none%22 stroke=%22%23fff%22 stroke-width=%221.6%22 vector-effect=%22non-scaling-stroke%22%3E%0A%3Cpath vector-effect=%22non-scaling-stroke%22 d=%22M4 158 V46 C4 30 30 24 42 13 C47 9 49 5 50 1 C51 5 53 9 58 13 C70 24 96 30 96 46 V158 Z%22/%3E%0A%3Cpath vector-effect=%22non-scaling-stroke%22 d=%22M10 152 V48 C10 35 33 29 44 19 C47 16 49 13 50 9 C51 13 53 16 56 19 C67 29 90 35 90 48 V152 Z%22/%3E%0A%3Cpath vector-effect=%22non-scaling-stroke%22 d=%22M44 158 L50 152 L56 158%22/%3E%3C/g%3E%3C/svg%3E");
+  --i-cloud: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 132 44%22%3E%0A%3Cg stroke=%22%23e2c391%22 stroke-linecap=%22round%22 fill=%22none%22 stroke-width=%221.3%22%3E%3Cpath d=%22M2 33 H46%22/%3E%3Cpath d=%22M14 38 H58%22/%3E%3Cpath d=%22M104 36 H130%22/%3E%3Cpath d=%22M92 40 H120%22/%3E%3C/g%3E%0A%3Cpath d=%22M50 34 C44 30 46 20 54 20 C54 12 64 8 71 12 C75 5 88 4 92 12 C99 9 108 14 106 21 C114 21 118 30 111 34 Z%22 fill=%22%232a50a6%22 stroke=%22%23e2c391%22 stroke-width=%221.6%22/%3E%0A%3Cpath d=%22M55 34 C51 31 53 25 58 25%22 fill=%22none%22 stroke=%22%237ea5ee%22 stroke-width=%221.2%22/%3E%0A%3Cg fill=%22none%22 stroke=%22%23e2c391%22 stroke-width=%221.3%22 stroke-linecap=%22round%22%3E%0A%3Cpath d=%22M74 24 c-4 0 -5 -6 -1 -7 c4 -1 6 4 3 6 c-2 1 -3 -1 -2 -2%22/%3E%0A%3Cpath d=%22M92 22 c-4 0 -5 -6 -1 -7 c4 -1 6 4 3 6 c-2 1 -3 -1 -2 -2%22/%3E%3C/g%3E%0A%3Cg fill=%22none%22 stroke=%22%237ea5ee%22 stroke-width=%221.1%22 stroke-linecap=%22round%22%3E%3Cpath d=%22M63 29 c-2 -3 1 -6 4 -4%22/%3E%3Cpath d=%22M100 28 c2 -3 -1 -6 -4 -4%22/%3E%3Cpath d=%22M82 15 c3 -2 6 1 4 4%22/%3E%3C/g%3E%0A%3Cg fill=%22%23e2c391%22%3E%3Ccircle cx=%2240%22 cy=%2226%22 r=%222%22/%3E%3Ccircle cx=%22122%22 cy=%2226%22 r=%221.6%22/%3E%3Ccircle cx=%226%22 cy=%2227%22 r=%221.2%22/%3E%3C/g%3E%3C/svg%3E");
+  --i-specks: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 320 320%22%3E%3Cg fill=%22%23c0334a%22%3E%0A%3Ccircle cx=%2231%22 cy=%2244%22 r=%221.3%22 opacity=%22.55%22/%3E%3Ccircle cx=%22212%22 cy=%2218%22 r=%220.9%22 opacity=%22.4%22/%3E%3Ccircle cx=%22288%22 cy=%2297%22 r=%221.6%22 opacity=%22.5%22/%3E%0A%3Ccircle cx=%22140%22 cy=%22133%22 r=%221%22 opacity=%22.35%22/%3E%3Ccircle cx=%2262%22 cy=%22201%22 r=%221.8%22 opacity=%22.45%22/%3E%3Ccircle cx=%22251%22 cy=%22236%22 r=%221.1%22 opacity=%22.5%22/%3E%0A%3Ccircle cx=%22176%22 cy=%22290%22 r=%221.4%22 opacity=%22.35%22/%3E%3Ccircle cx=%2212%22 cy=%22300%22 r=%220.8%22 opacity=%22.5%22/%3E%3Ccircle cx=%22305%22 cy=%22172%22 r=%220.7%22 opacity=%22.6%22/%3E%0A%3Ccircle cx=%2299%22 cy=%2288%22 r=%220.6%22 opacity=%22.6%22/%3E%3Ccircle cx=%22231%22 cy=%22149%22 r=%220.6%22 opacity=%22.45%22/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* ---------- page: smoky charcoal with crimson specks ---------- */
+body {
+  background:
+    var(--i-specks) 0 0 / 320px 320px,
+    radial-gradient(ellipse 60% 45% at 18% 8%, rgba(255, 255, 255, 0.045), transparent 70%),
+    radial-gradient(ellipse 55% 40% at 85% 55%, rgba(140, 50, 70, 0.07), transparent 70%),
+    radial-gradient(ellipse 70% 50% at 40% 100%, rgba(255, 255, 255, 0.03), transparent 70%),
+    var(--bg);
+  background-attachment: fixed;
+}
+:root[data-theme="light"] body { background: var(--bg); }
+h1, h2, h3 { letter-spacing: 0.03em; }
+.card-head h2, .card > h2:first-child { color: var(--gold-strong); }
+:root[data-theme="light"] .card-head h2, :root[data-theme="light"] .card > h2:first-child { color: var(--ink); }
+a, .db-link { color: var(--gold); }
+button.db-link { background: none; border: 0; padding: 0; font: inherit; color: var(--gold); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+button.db-link:hover { color: var(--gold-strong); }
+:root[data-theme="light"] a, :root[data-theme="light"] .db-link { color: var(--accent); }
+
+/* ---------- top bar ---------- */
+.topbar { background: linear-gradient(180deg, rgba(0, 0, 0, 0.25), transparent), var(--surface); border-bottom: 1px solid var(--line); box-shadow: 0 1px 0 var(--line-faint), 0 6px 18px rgba(0, 0, 0, 0.35); }
+:root[data-theme="light"] .topbar { background: var(--surface); box-shadow: 0 1px 0 var(--line-faint), var(--shadow); }
+.brand { position: relative; }
+.brand-mark { width: 30px; height: 30px; font-size: 0; display: inline-block; background: var(--gold); -webkit-mask: var(--i-octa) center / contain no-repeat; mask: var(--i-octa) center / contain no-repeat; flex: none; }
+.brand-title { font-size: 1.3rem; letter-spacing: 0.06em; color: var(--gold-strong); }
+.brand > div { position: relative; padding-right: 88px; }
+.brand > div::after { content: ""; position: absolute; right: 0; top: 50%; width: 80px; height: 27px; transform: translateY(-50%); background: var(--i-cloud) center / contain no-repeat; opacity: 0.95; }
+.pool { border: 1px solid var(--line); background-clip: padding-box; }
+.pool-threat { border-color: rgba(192, 51, 74, 0.55); }
+.pool-momentum { border-color: rgba(126, 165, 238, 0.45); }
+
+/* ---------- tabs: serif small caps; the open tab gets a pointed gold frame ---------- */
+.tabs { border-bottom: 1px solid var(--line); box-shadow: 0 1px 0 var(--line-faint); gap: 0.15rem; padding-top: 0.6rem; }
+.tabs button { font-variant: small-caps; letter-spacing: 0.06em; color: var(--muted); border-bottom: 0; padding: 0.45rem 1.05rem; position: relative; isolation: isolate; }
+.tabs button:hover { color: var(--gold); }
+.tabs button.on { color: var(--gold-strong);
+  --tab: polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0 50%);
+  background: var(--gold); clip-path: var(--tab); }
+.tabs button.on::before { content: ""; position: absolute; inset: 1px 1.4px; z-index: -1; background: var(--surface); clip-path: var(--tab); }
+
+/* ---------- cards: thin gold frame, a faint inner rule and stepped corner pieces ---------- */
+.card { position: relative; isolation: isolate; background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 120px), var(--surface); border: 1px solid var(--line); border-radius: 3px;
+  box-shadow: inset 0 0 0 4px var(--surface), inset 0 0 0 5px var(--line-faint), var(--shadow); }
+.card::before { content: ""; position: absolute; inset: 3px; pointer-events: none; z-index: -1; background: var(--orn);
+  -webkit-mask: var(--i-corner-tl) top left / 26px 26px no-repeat, var(--i-corner-tr) top right / 26px 26px no-repeat, var(--i-corner-br) bottom right / 26px 26px no-repeat, var(--i-corner-bl) bottom left / 26px 26px no-repeat;
+  mask: var(--i-corner-tl) top left / 26px 26px no-repeat, var(--i-corner-tr) top right / 26px 26px no-repeat, var(--i-corner-br) bottom right / 26px 26px no-repeat, var(--i-corner-bl) bottom left / 26px 26px no-repeat; }
+.card .card, .tl-form.card { box-shadow: inset 0 0 0 4px var(--surface), inset 0 0 0 5px var(--line-faint); }
+
+/* ---------- controls ---------- */
+input, select, textarea { background: rgba(0, 0, 0, 0.22); border-color: var(--line); border-radius: 3px; color: var(--ink); }
+:root[data-theme="light"] input, :root[data-theme="light"] select, :root[data-theme="light"] textarea { background: var(--surface); }
+select option { background: var(--surface); color: var(--ink); }
+.btn { border-radius: 3px; border-color: var(--line); background: rgba(255, 255, 255, 0.03); color: var(--ink); }
+.btn:hover { border-color: var(--gold); color: var(--gold-strong); }
+.btn.primary { background: linear-gradient(180deg, var(--gold-strong), var(--gold)); border-color: var(--gold); color: var(--on-accent); letter-spacing: 0.02em; }
+.btn.primary:hover { color: var(--on-accent); filter: brightness(1.08); }
+:root[data-theme="light"] .btn.primary { background: var(--accent); border-color: var(--accent); }
+.btn.ghost { background: transparent; }
+.seg { border-color: var(--line); border-radius: 3px; }
+.seg button { background: transparent; border-right-color: var(--line); }
+.seg button.on { background: var(--gold); color: var(--on-accent); }
+:root[data-theme="light"] .seg button.on { background: var(--accent); }
+.chip { border-color: var(--line) !important; }
+.badge { border-color: var(--line); background: transparent; color: var(--gold); }
+dialog { background: var(--surface); color: var(--ink); border: 1px solid var(--line); box-shadow: inset 0 0 0 4px var(--surface), inset 0 0 0 5px var(--line-faint), var(--shadow); }
+dialog::backdrop { background: rgba(8, 6, 10, 0.65); }
+
+/* ---------- rules and dividers: a gold line broken by an eight-point star ---------- */
+.divider { border: 0; height: 14px; margin: 0.8rem 0; background:
+  linear-gradient(var(--line), var(--line)) left center / calc(50% - 14px) 1px no-repeat,
+  linear-gradient(var(--line), var(--line)) right center / calc(50% - 14px) 1px no-repeat; position: relative; }
+.divider::after { content: ""; position: absolute; left: 50%; top: 0; width: 14px; height: 14px; transform: translateX(-50%); background: var(--orn); -webkit-mask: var(--i-octa) center / contain no-repeat; mask: var(--i-octa) center / contain no-repeat; }
+
+/* ---------- blue-and-gold cloud accents, used sparingly ---------- */
+.tl-lore .card-head h3::after, .cg-h h2::after { content: ""; display: inline-block; width: 58px; height: 19px; margin-left: 0.5rem; vertical-align: -2px; background: var(--i-cloud) center / contain no-repeat; }
+.empty::before { content: ""; display: block; width: 70px; height: 23px; margin: 0.2rem 0 0.35rem; background: var(--i-cloud) left center / contain no-repeat; opacity: 0.85; }
+
+/* ---------- art: figures stand in a pointed gold arch ---------- */
+.db-art-fig, .cg-fac-art { position: relative; isolation: isolate; }
+.db-art-fig.k-character::before, .db-art-fig.k-portrait::before, .cg-fac-art::before { content: ""; position: absolute; z-index: -1; left: 8%; right: 8%; top: 0; bottom: 1.6rem; background: var(--line);
+  -webkit-mask: var(--i-arch) center / 100% 100% no-repeat; mask: var(--i-arch) center / 100% 100% no-repeat; }
+.db-art-fig.big::before { bottom: 0; }
+.cg-fac-art::before { bottom: 0; left: 6%; right: 6%; }
+
+/* ---------- timeline: dots become eight-point stars ---------- */
+.tl-dot { border: 0; border-radius: 0; box-shadow: none; width: 18px; height: 18px; background: var(--gold); -webkit-mask: var(--i-star) center / contain no-repeat; mask: var(--i-star) center / contain no-repeat; }
+.tl-dot.inherited { background: var(--gold-dim); box-shadow: none; }
+.tl-dot.custom { background: var(--good); box-shadow: none; }
+.tl-dot.on { background: var(--crimson); box-shadow: none; transform: translateX(-50%) scale(1.6); }
+.tl-scroller { background: rgba(0, 0, 0, 0.2); border-color: var(--line); border-radius: 3px; }
+:root[data-theme="light"] .tl-scroller { background: var(--surface-2); }
+.tl-axis { background: var(--line); }
+.tl-band { border-left-color: var(--line-faint); }
+.tl-band.b0 { background: rgba(226, 195, 145, 0.05); }
+.tl-band.b1 { background: transparent; }
+.tl-band span { color: var(--gold-dim); }
+.tl-center { border-left-color: var(--crimson); }
+.tl-center span { background: var(--crimson); color: #fff; font-family: var(--serif); letter-spacing: 0.04em; }
+.tl-step { background: var(--surface); border-color: var(--line); color: var(--gold); }
+.tl-forkline { border-left-color: var(--gold); }
+.tl-forkline button { background: var(--surface); border-color: var(--gold); }
+
+/* ---------- smaller pieces that used warm parchment colors ---------- */
+.db-row.on, .db-tab.on { border-color: var(--gold) !important; }
+.cg-arch, .cg-kind, .cg-skill, .cg-drive, .cg-talent { border-radius: 3px; }

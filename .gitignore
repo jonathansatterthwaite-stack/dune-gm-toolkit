@@ -15,3 +15,6 @@ desktop.ini
 
 # Character art extracted locally from your PDFs (tools/extract-art.py) - personal use, never commit
 img/local/
+
+# style reference images (stock, licensed): local only
+\[images\]/
