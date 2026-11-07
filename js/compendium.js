@@ -134,6 +134,18 @@
     return `<div class="c-actions">${out.join("")}</div>`;
   }
 
+  // "In the novels": lore notes from js/db/lore.js, kept apart from the RPG data
+  const CANON = { Original: ["Novels", "Frank Herbert's novels"], Expanded: ["Expanded", "Brian Herbert & Kevin J. Anderson's novels"], Encyclopedia: ["Encyclopedia", "The Dune Encyclopedia (not canon)"] };
+  function loreSection(r) {
+    if (!r.lore || !r.lore.length) return "";
+    return `<h4>In the novels</h4><ul class="db-lore">${r.lore.map((n) => {
+      const [tag, long] = CANON[n.canon] || [n.canon, n.canon];
+      return `<li><span class="db-canon c-${esc(String(n.canon).toLowerCase())}" title="${esc(long)}">${esc(tag)}</span>${n.conflict ? `<span class="db-conflict" title="This differs from the RPG books">Differs from the RPG</span>` : ""} ${esc(n.text)}
+        ${n.url ? `<a class="db-lore-src" href="${esc(n.url)}" target="_blank" rel="noopener">Dune Wiki ↗</a>` : ""}</li>`;
+    }).join("")}</ul>
+    <p class="pg">Background from outside the RPG books, summarized from the Dune Wiki. The RPG's own values above are unchanged.</p>`;
+  }
+
   // "From the book": the entry's own section, or its whole page when the section couldn't be isolated
   function bookSection(r) {
     const e = FT()[r.id]; if (!e) return "";
@@ -184,12 +196,13 @@
       ${r.text ? `<p>${esc(r.text)}</p>` : ""}
       ${body}${extra}
       <p class="pg">Source: ${esc(r.src || "—")}${r.book && r.book !== "Homebrew" && !FT()[r.id] ? " — summary written for this tool; see the book for the full text." : ""}</p>
+      ${loreSection(r)}
       ${bookSection(r)}
       ${actionsFor(r)}`;
   }
 
   // ---- homebrew editor
-  const EDIT_SKIP = new Set(["id", "_t", "_custom", "book", "usedBy", "aliases"]);
+  const EDIT_SKIP = new Set(["id", "_t", "_custom", "book", "usedBy", "aliases", "lore"]);
   function draftFrom(t, r) {
     const base = r ? JSON.parse(JSON.stringify(r)) : { name: "", text: "" };
     const tmpl = rowsOf(t)[0] || {};

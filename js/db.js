@@ -43,6 +43,14 @@ window.DUNE_DB = (function () {
   // (an NPC's "Shield Belt" is the Personal Shield asset). Stored on the row as `aliases`.
   const ALIAS = {};
   function alias(name, map) { const a = (ALIAS[name] = ALIAS[name] || {}); Object.entries(map).forEach(([k, v]) => (a[k.toLowerCase()] = (a[k.toLowerCase()] || []).concat(v))); built = false; }
+  // lore(name, {rowName: [note, …]}): background from outside the RPG books (the novels, via the Dune Wiki), kept
+  // apart from the book data and never overwriting it. note = { text, canon, url, conflict? } where canon is
+  // "Original" (Frank Herbert), "Expanded" (Brian Herbert & Kevin J. Anderson) or "Encyclopedia" (The Dune
+  // Encyclopedia, non-canon); conflict marks a note that disagrees with the RPG. Stored on the row as `lore`.
+  const LORE = {};
+  function lore(name, map) { const a = (LORE[name] = LORE[name] || {}); Object.entries(map).forEach(([k, v]) => (a[k.toLowerCase()] = (a[k.toLowerCase()] || []).concat(v))); built = false; }
+  // every [table, rowName] that has lore, so tools/audit-db.js can check each one matches a row
+  const loreTargets = () => Object.entries(LORE).flatMap(([t, m]) => Object.keys(m).map((n) => [t, n]));
 
   function build() {
     if (built) return;
@@ -57,6 +65,8 @@ window.DUNE_DB = (function () {
         const out = Object.assign({}, r, { id, _t: k, src: r.src || "", book: bookOf(r.src) });
         const al = ALIAS[k] && ALIAS[k][String(r.name).toLowerCase()];
         if (al) out.aliases = Array.from(new Set((r.aliases || []).concat(al)));
+        const lr = LORE[k] && LORE[k][String(r.name).toLowerCase()];
+        if (lr) out.lore = lr;
         return out;
       });
     });
@@ -89,5 +99,5 @@ window.DUNE_DB = (function () {
   }
   function stats() { build(); return tables().map((k) => [k, built[k].length]); }
 
-  return { META, add, view, alias, rows, tables, get, find, search, text, stats, slug, bookOf };
+  return { META, add, view, alias, lore, loreTargets, rows, tables, get, find, search, text, stats, slug, bookOf };
 })();

@@ -107,6 +107,12 @@ for (const p of DB.rows("planets")) {
   if (p.house && p.ruler) err("planets", `${p.name}: has both a ruling House and a non-House ruler`);
 }
 for (const tr of DB.rows("traits")) tr.usedBy.forEach((w) => has("houses", w) || has("npcs", w) || /template$|^Any House/.test(w) || err("traits", `${tr.name}: used by unknown "${w}"`));
+// lore notes (js/db/lore.js) must each attach to a real row and say which canon they come from
+for (const [t, n] of DB.loreTargets ? DB.loreTargets() : []) if (!DB.find(t, n)) err(t, `lore for "${n}" matches no entry`);
+for (const t of DB.tables()) for (const r of t === "pages" ? [] : DB.rows(t)) (r.lore || []).forEach((n) => {
+  if (!["Original", "Expanded", "Encyclopedia"].includes(n.canon)) err(t, `${r.name}: lore note with unknown canon "${n.canon}"`);
+  if (!n.text || !/^https:\/\//.test(n.url || "")) err(t, `${r.name}: lore note needs text and a source url`);
+});
 for (const t of DB.rows("talents")) if (t.faction && !DB.rows("factions").some((f) => f.name === t.faction)) err("talents", `${t.name}: faction "${t.faction}" is not a faction template`);
 
 // ---- report
