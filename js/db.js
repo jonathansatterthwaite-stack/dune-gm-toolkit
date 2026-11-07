@@ -23,6 +23,7 @@ window.DUNE_DB = (function () {
     ventures:      { group: "Houses", title: "House ventures", desc: "The Great Game's yearly House management ventures and their costs.", cols: [["group", "Type"], ["skill", "Skill"]], facet: "group" },
     planets:       { group: "World", title: "Planets", desc: "Worlds of the Imperium: system, ruling House, exports and places of interest.", cols: [["system", "System"], ["house", "House"]], facet: "" },
     organizations: { group: "World", title: "Factions and powers", desc: "The great powers of the Imperium and the factions of Arrakis.", cols: [["kind", "Kind"]], facet: "kind" },
+    events:        { group: "World", title: "Timeline events", desc: "Dated events in the novels and the adventures, which can change other entries from their date on. Your own are on the Timeline tab.", cols: [["year", "Year"], ["branch", "Timeline"]], facet: "branch" },
     adventures:    { group: "Adventures", title: "Adventures", desc: "Agents of Dune, the Masters of Dune campaign and the GM Toolkit: acts, chapters, campaign rules, intrigues and locations, with their NPCs.", cols: [["kind", "Kind"], ["part", "Part of"]], facet: "kind" },
     traits:        { group: "World", title: "Traits", desc: "Traits used in the books — reputations, House traits, conditions and scene traits.", cols: [["kind", "Kind"]], facet: "kind" },
     // only present when js/db/fulltext.local.js has been generated from your own PDFs (tools/build-fulltext.js)

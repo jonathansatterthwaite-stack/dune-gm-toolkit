@@ -689,3 +689,47 @@ html.cg-fit .cg-facard .cg-stamp { top: -0.55rem; }
 html.cg-fit .cg-fac-art { flex: 1 1 0; min-height: 0; }
 html.cg-fit .cg-fac-art img { height: 100%; max-height: 100%; max-width: 100%; }
 html.cg-fit .cg-emblem { width: clamp(120px, calc(var(--h) * 0.2), 190px); height: clamp(120px, calc(var(--h) * 0.2), 190px); }
+
+/* ---------- Timeline tab ---------- */
+.tl-now .mini { flex-wrap: wrap; align-items: center; }
+.tl-cols { display: grid; grid-template-columns: minmax(220px, 280px) minmax(0, 1fr); gap: 1rem; align-items: start; }
+.tl-tree ul { list-style: none; margin: 0 0 0.8rem; padding: 0; }
+.tl-node { padding-left: calc(var(--d) * 0.9rem); }
+.tl-node ul { margin: 0; }
+.tl-branch { display: flex; flex-direction: column; align-items: flex-start; gap: 0.1rem; width: 100%; text-align: left; padding: 0.4rem 0.55rem; margin: 0.15rem 0; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; }
+.tl-node.on > .tl-branch { border-color: var(--accent); background: var(--surface-2); box-shadow: inset 3px 0 0 var(--accent); }
+.tl-tree label { display: flex; flex-direction: column; gap: 0.15rem; margin-bottom: 0.45rem; }
+.tl-tree input, .tl-tree select { width: 100%; }
+.tl-list { list-style: none; margin: 0; padding: 0; position: relative; }
+.tl-list::before { content: ""; position: absolute; left: 6.2rem; top: 0; bottom: 0; width: 2px; background: var(--border); }
+.tl-ev { position: relative; display: grid; grid-template-columns: 5.6rem minmax(0, 1fr); gap: 1.2rem; padding: 0.5rem 0; }
+.tl-ev::before { content: ""; position: absolute; left: calc(6.2rem - 5px); top: 0.95rem; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); }
+.tl-ev.inherited::before { background: var(--muted); }
+.tl-ev.custom::before { background: var(--good); }
+.tl-year { text-align: right; font-family: var(--serif); font-weight: 700; padding-top: 0.45rem; white-space: nowrap; }
+.tl-body { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.55rem 0.75rem; }
+.tl-ev.inherited .tl-body { background: transparent; border-style: dashed; }
+.tl-title { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: baseline; }
+.tl-body p { margin: 0.3rem 0 0; }
+.tl-changes { margin: 0.35rem 0 0; padding-left: 1.1rem; font-size: 0.88rem; }
+.tl-actions { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; margin-top: 0.45rem; }
+.tl-actions .pg { margin-right: auto; }
+.tl-era { margin: 0.9rem 0 0.3rem 7.2rem; padding: 0.4rem 0.7rem; border-radius: 6px; background: var(--parch-band, var(--surface-2)); display: flex; flex-direction: column; gap: 0.1rem; }
+.tl-era b { font-family: var(--serif); font-variant: small-caps; letter-spacing: 0.05em; font-size: 1.05rem; }
+.tl-fork { margin: 0.4rem 0 0.4rem 7.2rem; padding: 0.3rem 0.6rem; border: 1px dashed var(--accent); border-radius: 999px; font-size: 0.88rem; display: inline-flex; gap: 0.35rem; align-items: center; }
+.tl-fork > span { color: var(--accent); font-weight: 800; }
+.tl-form .tl-grid { display: grid; grid-template-columns: repeat(3, auto) minmax(0, 1fr); gap: 0.4rem 0.8rem; align-items: end; }
+.tl-form .tl-grid label { display: flex; flex-direction: column; gap: 0.15rem; }
+.tl-form .tl-grid .wide { grid-column: 1 / -1; }
+.tl-form .tl-pick { flex-wrap: wrap; }
+.tl-asof { margin: 0 0 0.7rem; padding: 0.5rem 0.8rem; border-radius: 8px; background: var(--crit-soft); border: 1px solid var(--crit); }
+.tl-chg { margin-left: 0.4rem; font: inherit; font-size: 0.7rem; font-weight: 700; padding: 0 7px; border-radius: 999px; border: 1px solid var(--crit); background: var(--crit-soft); color: var(--crit); cursor: pointer; vertical-align: 1px; }
+@media (max-width: 760px) {
+  .tl-cols { grid-template-columns: minmax(0, 1fr); }
+  .tl-list::before { left: 0.45rem; }
+  .tl-ev { grid-template-columns: minmax(0, 1fr); gap: 0.2rem; padding-left: 1.4rem; }
+  .tl-ev::before { left: 0; }
+  .tl-year { text-align: left; padding-top: 0; }
+  .tl-era, .tl-fork { margin-left: 1.4rem; }
+  .tl-form .tl-grid { grid-template-columns: minmax(0, 1fr); }
+}

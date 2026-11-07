@@ -59,7 +59,8 @@ for (const t of DB.tables()) {
     const who = `${r.name}`;
     if (ids.has(r.id)) err(t, `duplicate id ${r.id}`); ids.add(r.id);
     if (/-\d+$/.test(r.id) && !/-\d+$/.test(DB.slug(r.name))) err(t, `${who}: a second row has the same name (${r.id})`);
-    if (!r.src) err(t, `${who}: no src`);
+    if (!r.src && !r.url) err(t, `${who}: no src (or url for a wiki-sourced row)`);
+    else if (!r.src) { /* sourced by url only, like the novels' timeline events */ }
     else r.src.split("; ").forEach((s) => SRC.test(s) || err(t, `${who}: src "${r.src}" is not "<Book> p.N"`));
     strings(r, (s, p) => {
       if (/^\._|^\.(id|book)$/.test(p)) return;
@@ -107,6 +108,18 @@ for (const p of DB.rows("planets")) {
   if (p.house && p.ruler) err("planets", `${p.name}: has both a ruling House and a non-House ruler`);
 }
 for (const tr of DB.rows("traits")) tr.usedBy.forEach((w) => has("houses", w) || has("npcs", w) || /template$|^Any House/.test(w) || err("traits", `${tr.name}: used by unknown "${w}"`));
+// timeline events (js/db/timeline.js): a known timeline, a year, and references and changes that resolve
+const TLD = win.DUNE_TIMELINE || { branches: [], eras: [] };
+for (const e of DB.rows("events")) {
+  if (!TLD.branches.some((b) => b.id === e.branch)) err("events", `${e.name}: unknown timeline "${e.branch}"`);
+  if (!Number.isInteger(e.year)) err("events", `${e.name}: year "${e.year}" is not a whole number`);
+  e.refs.forEach((x) => { const i = x.indexOf(":"); has(x.slice(0, i), x.slice(i + 1)) || err("events", `${e.name}: involves unknown "${x}"`); });
+  e.changes.forEach((c) => { const i = c.ref.indexOf(":"), row = DB.find(c.ref.slice(0, i), c.ref.slice(i + 1));
+    if (!row) err("events", `${e.name}: changes unknown "${c.ref}"`);
+    else if (!(c.field in row) && c.field !== "status") err("events", `${e.name}: ${row.name} has no field "${c.field}"`); });
+}
+for (const b of TLD.branches) if (b.parent && !TLD.branches.some((x) => x.id === b.parent)) err("events", `timeline ${b.name}: unknown parent "${b.parent}"`);
+
 // lore notes (js/db/lore.js) must each attach to a real row and say which canon they come from
 for (const [t, n] of DB.loreTargets ? DB.loreTargets() : []) if (!DB.find(t, n)) err(t, `lore for "${n}" matches no entry`);
 for (const t of DB.tables()) for (const r of t === "pages" ? [] : DB.rows(t)) (r.lore || []).forEach((n) => {

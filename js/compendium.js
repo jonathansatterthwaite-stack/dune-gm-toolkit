@@ -117,9 +117,12 @@
     organizations: [["kind", "Kind"]],
     traits: [["kind", "Kind"], ["usedBy", "Used by", "uses"]],
   };
+  // a field changed by the timeline (js/timeline.js) carries a marker saying when, and what it was in the books
+  const changedMark = (r, k) => { const c = r._changes && r._changes[k]; if (!c) return "";
+    return ` <button class="tl-chg" data-act="tlGoEvent" data-id="${esc(c.id)}" title="Changed by “${esc(c.event)}”. In the books: ${esc(Array.isArray(c.from) ? c.from.join(", ") : c.from == null || c.from === "" ? "none" : c.from)}">since ${esc(G.timeline.yearText(c.year, c.circa))}</button>`; };
   function fieldHTML(r, [k, label, how]) {
     let v = r[k];
-    if (v == null || v === "" || (Array.isArray(v) && !v.length)) return "";
+    if (v == null || v === "" || (Array.isArray(v) && !v.length)) return r._changes && r._changes[k] ? `<dt>${esc(label)}</dt><dd><i class="muted">none</i>${changedMark(r, k)}</dd>` : "";
     let out;
     if (how === "chips") out = chips(v);
     else if (how === "list") out = list(v);
@@ -132,7 +135,7 @@
     else if (how && how.startsWith("links:")) out = links(how.slice(6), v);
     else if (how && how.startsWith("link:")) out = link(how.slice(5), String(v).replace(/\s*\(.*\)$/, "").replace(/,.*$/, ""), v);
     else out = Array.isArray(v) ? list(v) : esc(String(v));
-    return `<dt>${esc(label)}</dt><dd>${out}</dd>`;
+    return `<dt>${esc(label)}</dt><dd>${out}${changedMark(r, k)}</dd>`;
   }
   function genericFields(r) {
     const skip = new Set(["id", "name", "text", "src", "book", "title", "_t", "_custom"]);
@@ -144,6 +147,7 @@
     return `<div class="statgrid">${SK.map((s) => `<div class="s"><div class="k">${s}</div><div class="v">${n.skills[s] ?? "—"}</div></div>`).join("")}</div>
       <div class="statgrid db-drives">${DR.map((d) => `<div class="s"><div class="k">${esc(d)}</div><div class="v">${n.drives[d]}</div></div>`).join("")}</div>
       <dl class="kv">
+        ${n.status ? `<dt>Status</dt><dd><b>${esc(n.status)}</b>${changedMark(n, "status")}</dd>` : ""}
         <dt>Focuses</dt><dd>${Object.entries(n.focuses || {}).map(([s, fs]) => `<b>${esc(s)}:</b> ${links("focuses", fs)}`).join("<br/>") || "—"}</dd>
         <dt>Talents</dt><dd>${links("talents", n.talents)}</dd>
         <dt>Traits</dt><dd>${links("traits", n.traits)}</dd>
@@ -166,6 +170,24 @@
     if (r._custom) out.push(b("dbEdit", "Edit"), b("dbDelete", "Delete", " ghost danger"));
     else out.push(b("dbClone", "Copy to homebrew", " ghost"));
     return `<div class="c-actions">${out.join("")}</div>`;
+  }
+
+  // timeline: an event's own fields, and the events that touch an entry
+  function eventBody(e) {
+    const TLG = G.timeline, b = TLG.branchOf(e.branch), era = TLG.eraOf(+e.year);
+    const refs = (e.refs || []).map((x) => { const i = x.indexOf(":"); return link(x.slice(0, i), x.slice(i + 1)); });
+    return `<dl class="kv"><dt>Year</dt><dd>${esc(TLG.yearText(e.year, e.circa))}${era ? ` <span class="muted">(${esc(era.name)})</span>` : ""}</dd>
+      <dt>Timeline</dt><dd>${esc(b ? b.name : e.branch)} <button class="db-link" data-act="tlGoEvent" data-id="${esc(e.id)}">Show on the timeline</button></dd>
+      ${refs.length ? `<dt>Involves</dt><dd>${refs.join(", ")}</dd>` : ""}
+      ${(e.changes || []).length ? `<dt>Changes</dt><dd>${e.changes.map((c) => TLG.describeChange(c).html.replace(/data-act="tlOpen"/g, 'data-act="dbGo"')).join("<br/>")}</dd>` : ""}</dl>
+      ${e.url ? `<p class="pg">Year and events from the <a href="${esc(e.url)}" target="_blank" rel="noopener">Dune Wiki's timeline of Frank Herbert's novels ↗</a>; summary written for this tool.</p>` : ""}`;
+  }
+  function timelineSection(r) {
+    if (!G.timeline || r._t === "events") return "";
+    const evs = G.timeline.eventsFor(r);
+    if (!evs.length) return "";
+    return `<h4>On the timeline</h4><ul class="db-lore">${evs.map((e) => { const b = G.timeline.branchOf(e.branch);
+      return `<li><b>${esc(G.timeline.yearText(e.year, e.circa))}</b> · <button class="db-link" data-act="tlGoEvent" data-id="${esc(e.id)}">${esc(e.name)}</button> <span class="db-canon">${esc(b ? b.name : e.branch)}</span></li>`; }).join("")}</ul>`;
   }
 
   // "In the novels": lore notes from js/db/lore.js, kept apart from the RPG data
@@ -207,9 +229,11 @@
     if (!r) return `<div class="hint">Pick an entry to see it here.</div>`;
     if (r._t === "pages") return pageDetail(r);
     if (r._t === "art") return artDetail(r) + `<div class="c-actions"><a class="btn" href="${esc(r.file)}" target="_blank" rel="noopener">Open full size</a></div>`;
+    if (G.timeline) r = G.timeline.asOf(r);
     const t = r._t, m = meta(t), arts = artFor(r);
     let body = "";
     if (t === "npcs") body = npcBlock(r);
+    else if (t === "events" && G.timeline) body = eventBody(r);
     else { const spec = FIELDS[t]; body = `<dl class="kv">${spec ? spec.map((f) => fieldHTML(r, f)).join("") : genericFields(r)}</dl>`; }
     let extra = "";
     if (t === "houses") {
@@ -233,6 +257,7 @@
       ${body}${extra}
       <p class="pg">Source: ${esc(r.src || "—")}${r.book && r.book !== "Homebrew" && !FT()[r.id] ? " — summary written for this tool; see the book for the full text." : ""}</p>
       ${loreSection(r)}
+      ${timelineSection(r)}
       ${bookSection(r)}
       ${actionsFor(r)}`;
   }
@@ -267,6 +292,8 @@
   // ---- the view
   G.views.compendium = () => {
     const s = ST();
+    const asOf = G.timeline && G.timeline.nowSet() ? (() => { const n = G.timeline.now(), b = G.timeline.branchOf(n.branch);
+      return `<div class="tl-asof">Showing entries as of <b>${esc(G.timeline.yearText(+n.year))}</b> in <b>${esc(b ? b.name : "")}</b>. <button class="db-link" data-tab="timeline">Change</button> <button class="db-link" data-act="tlClearNow">Show the books' values</button></div>`; })() : "";
     if (s.table !== "*" && !allTables().includes(s.table)) s.table = "assets";
     const groups = {};
     allTables().forEach((t) => { const g = meta(t).group; (groups[g] = groups[g] || []).push(t); });
@@ -303,7 +330,7 @@
         ${rows.length > shown.length ? `<button class="btn small" data-act="dbMore" style="margin-top:0.5rem">Show ${Math.min(200, rows.length - shown.length)} more</button>` : ""}
       </section>`;
     const detail = `<section class="card db-detail">${s.draft ? editorHTML(s.draft) : detailHTML(getRow(s.sel))}</section>`;
-    return `<div class="db-layout">${side}${listCard}${detail}</div>`;
+    return `${asOf}<div class="db-layout">${side}${listCard}${detail}</div>`;
   };
 
   // ---- reset facet / paging when the table or filters change
