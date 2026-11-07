@@ -18,7 +18,8 @@
   const findRow = (t, name) => {
     const n = String(name || "").toLowerCase().trim(); if (!n) return null;
     const list = rowsOf(t);
-    return list.find((r) => r.name.toLowerCase() === n) || list.find((r) => r.name.toLowerCase() === n.replace(/\s*\(.*\)$/, "")) ||
+    const is = (r, x) => r.name.toLowerCase() === x || (r.aliases || []).some((a) => a.toLowerCase() === x);
+    return list.find((r) => is(r, n)) || list.find((r) => is(r, n.replace(/\s*\(.*\)$/, ""))) ||
       list.find((r) => r.name.toLowerCase() === "house " + n) || null;
   };
   const meta = (t) => DB.META[t] || { group: "Homebrew", title: t, desc: "", cols: [], facet: "" };
@@ -65,12 +66,12 @@
 
   // field specs per table: [key, label, how]
   const FIELDS = {
-    assets: [["cat", "Type"], ["group", "Group"], ["kw", "Keywords", "chips"], ["q", "Quality", "q"], ["tangible", "Tangible", "bool"], ["special", "Special"]],
+    assets: [["cat", "Type"], ["group", "Group"], ["kw", "Keywords", "chips"], ["q", "Quality", "q"], ["tangible", "Tangible", "bool"], ["special", "Special"], ["aliases", "Also called", "list"]],
     talents: [["faction", "Faction"], ["param", "Choose a"]],
-    archetypes: [["primary", "Primary skill"], ["secondary", "Secondary skill"], ["focuses", "Focuses", "list"], ["talents", "Talents", "links:talents"]],
+    archetypes: [["primary", "Primary skill"], ["secondary", "Secondary skill"], ["focuses", "Focuses", "links:focuses"], ["talents", "Talents", "links:talents"]],
     factions: [["trait", "Trait"], ["mandatory", "Talents", "links:talents"], ["rule", "Rule"], ["archetypes", "Suggested archetypes", "links:archetypes"]],
-    houses: [["rank", "Rank"], ["liege", "Serves", "link:houses"], ["homeworld", "Homeworld", "link:planets"], ["crest", "Crest"], ["colors", "Colours"], ["motto", "Motto", "motto"], ["traits", "Traits", "links:traits"], ["primary", "Primary domains", "lines"], ["secondary", "Secondary domains", "lines"], ["family", "Household", "family"]],
-    planets: [["system", "Star system"], ["moons", "Moons"], ["habitable", "Habitability"], ["house", "Ruling House", "link:houses"], ["exports", "Exports"], ["population", "Population"], ["languages", "Languages"], ["places", "Places of interest", "list"]],
+    houses: [["rank", "Rank"], ["liege", "Serves", "link:houses"], ["homeworld", "Homeworld", "link:planets"], ["crest", "Crest"], ["colors", "Colors"], ["motto", "Motto", "motto"], ["traits", "Traits", "links:traits"], ["primary", "Primary domains", "lines"], ["secondary", "Secondary domains", "lines"], ["family", "Household", "family"]],
+    planets: [["system", "Star system"], ["designation", "Designation"], ["moons", "Moons"], ["habitable", "Habitability"], ["house", "Ruling House", "link:houses"], ["vassal", "Held for them by", "link:houses"], ["ruler", "Ruled by", "link:organizations"], ["note", "Note"], ["exports", "Exports"], ["population", "Population"], ["languages", "Languages"], ["places", "Places of interest", "list"]],
     houseTypes: [["threatNote", "Threat"], ["domains", "Starting domains"], ["enemies", "Starting enemies"], ["gg", "House management"]],
     domains: [["trait", "House trait"], ["machinery", "Machinery"], ["produce", "Produce"], ["expertise", "Expertise"], ["workers", "Workers"], ["understanding", "Understanding"]],
     houseRoles: [["rights", "Rights and duties"], ["gg", "In House management"]],
@@ -78,7 +79,7 @@
     enmity: [["kind", "Table"], ["roll", "Roll (d20)"]],
     ventures: [["group", "Type"], ["skill", "Skill"], ["cost", "Cost"], ["successes", "Successes needed"]],
     drives: [["set", "Set"], ["examples", "Example statements", "list"]],
-    focuses: [["skill", "Skill"]],
+    focuses: [["skill", "Skill"], ["specify", "Specialty"], ["examples", "Specialties in the books", "list"], ["set", "Listed in"], ["usedBy", "Used by", "uses"]],
     organizations: [["kind", "Kind"]],
     traits: [["kind", "Kind"], ["usedBy", "Used by", "uses"]],
   };
@@ -93,7 +94,7 @@
     else if (how === "q") out = `${v}`;
     else if (how === "motto") out = `<i>“${esc(v)}”</i>`;
     else if (how === "family") out = v.map((m) => `${link("npcs", m.name)}${m.role ? ` <span class="muted">(${esc(m.role)})</span>` : ""}`).join("<br/>");
-    else if (how === "uses") out = v.map((who) => link("houses", who) !== esc(who) ? link("houses", who) : link("npcs", who)).join(", ");
+    else if (how === "uses") out = v.map((who) => ["houses", "npcs", "archetypes"].map((t) => link(t, who)).find((h) => h !== esc(who)) || esc(who)).join(", ");
     else if (how && how.startsWith("links:")) out = links(how.slice(6), v);
     else if (how && how.startsWith("link:")) out = link(how.slice(5), String(v).replace(/\s*\(.*\)$/, "").replace(/,.*$/, ""), v);
     else out = Array.isArray(v) ? list(v) : esc(String(v));
@@ -109,7 +110,7 @@
     return `<div class="statgrid">${SK.map((s) => `<div class="s"><div class="k">${s}</div><div class="v">${n.skills[s] ?? "—"}</div></div>`).join("")}</div>
       <div class="statgrid db-drives">${DR.map((d) => `<div class="s"><div class="k">${esc(d)}</div><div class="v">${n.drives[d]}</div></div>`).join("")}</div>
       <dl class="kv">
-        <dt>Focuses</dt><dd>${Object.entries(n.focuses || {}).map(([s, fs]) => `<b>${esc(s)}:</b> ${fs.map(esc).join(", ")}`).join("<br/>") || "—"}</dd>
+        <dt>Focuses</dt><dd>${Object.entries(n.focuses || {}).map(([s, fs]) => `<b>${esc(s)}:</b> ${links("focuses", fs)}`).join("<br/>") || "—"}</dd>
         <dt>Talents</dt><dd>${links("talents", n.talents)}</dd>
         <dt>Traits</dt><dd>${links("traits", n.traits)}</dd>
         <dt>Assets</dt><dd>${(n.assets || []).map((a) => link("assets", a)).join(", ") || "—"}</dd>
@@ -167,7 +168,7 @@
     if (t === "houses") {
       const vassals = rowsOf("houses").filter((h) => h.liege === r.name);
       if (vassals.length) extra += `<h4>Vassal Houses</h4><dl class="kv">${vassals.map((v) => `<dt>${link("houses", v.name, v.name.replace(/^House /, ""))}</dt><dd>${esc(v.text)}</dd>`).join("")}</dl>`;
-      const worlds = rowsOf("planets").filter((p) => p.house && p.house.toLowerCase().includes(r.name.replace(/^House /, "").toLowerCase()));
+      const worlds = rowsOf("planets").filter((p) => p.house === r.name || p.vassal === r.name);
       if (worlds.length) extra += `<h4>Worlds</h4><p>${worlds.map((p) => link("planets", p.name)).join(", ")}</p>`;
     }
     if (t === "talents") {
@@ -175,7 +176,8 @@
       if (who.length) extra += `<h4>NPCs with this talent</h4><p>${who.map((n) => link("npcs", n.name)).join(", ")}</p>`;
     }
     if (t === "assets") {
-      const who = rowsOf("npcs").filter((n) => (n.assets || []).some((a) => a.toLowerCase() === r.name.toLowerCase()));
+      const names = [r.name].concat(r.aliases || []).map((x) => x.toLowerCase());
+      const who = rowsOf("npcs").filter((n) => (n.assets || []).some((a) => names.includes(a.toLowerCase())));
       if (who.length) extra += `<h4>Carried by</h4><p>${who.map((n) => link("npcs", n.name)).join(", ")}</p>`;
     }
     return `<div class="card-head"><div><h2>${esc(r.name)}</h2><div class="muted small">${esc(m.title)}${r.title ? ` · ${esc(r.title)}` : ""}${r.kind && t === "npcs" ? ` · ${esc(r.kind)}` : ""}</div></div>${tag(r)}</div>
@@ -187,7 +189,7 @@
   }
 
   // ---- homebrew editor
-  const EDIT_SKIP = new Set(["id", "_t", "_custom", "book", "usedBy"]);
+  const EDIT_SKIP = new Set(["id", "_t", "_custom", "book", "usedBy", "aliases"]);
   function draftFrom(t, r) {
     const base = r ? JSON.parse(JSON.stringify(r)) : { name: "", text: "" };
     const tmpl = rowsOf(t)[0] || {};

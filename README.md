@@ -55,6 +55,12 @@ Rules numbers (costs, bands, dice), keywords and stat blocks follow the books, w
 - `js/db/*.js` are the database tables: `assets-core.js` and `assets-x.js` (assets), `npcs-core.js` and `npcs-x.js` (NPC stat blocks), `houses.js`, `planets.js`, and `rules.js` (House creation, roles, enmity, factions, traits, focuses, drives and the views).
 - `js/compendium.js` is the Compendium tab: browsing, search, links between entries, hand-offs to the other tools, homebrew and export.
 - `tools/build-fulltext.js` builds `js/db/fulltext.local.js` from your PDFs: it puts each page into reading order (splitting two- and three-column layouts), matches every database entry to its section by page reference and heading, and stores every page as text. Personal use only; the output is gitignored.
+- `tools/audit-db.js` checks the database: run `node tools/audit-db.js` after editing any table. It loads the same scripts the page does and reports any row that breaks the house style, and exits with an error if it finds one. The house style is:
+  - page references read `<Book> p.N`;
+  - US spelling, as the books use;
+  - Houses are always named "House X", and House ranks are Great, Major, Minor, Imperial or Unranked;
+  - House domains are written "Area (Type): detail";
+  - every talent, focus, archetype, House, homeworld and planet ruler that one entry names exists as an entry of its own.
 - `tools/extract-art.py` cuts the faction template character art out of your PDFs (with transparency) into `img/local/factions/` and writes `js/db/art.local.js`. Personal use only; both are gitignored.
 - `js/vendor/three.min.js` is three.js r187, bundled so it loads without a server. `js/vendor/README.md` explains how to rebuild it.
 - `[rulebooks]/` contains your PDFs, which the rules were checked against.

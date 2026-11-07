@@ -39,6 +39,10 @@ window.DUNE_DB = (function () {
   // view(name, fn): rows computed on first use from data other scripts define (they may load after db.js).
   // fn receives tbl(name) → the rows of tables built so far (book tables, then views in registration order).
   function view(name, fn) { views.push([name, fn]); built = false; }
+  // alias(name, {rowName: [other names]}): other names a row goes by, so loose references still resolve
+  // (an NPC's "Shield Belt" is the Personal Shield asset). Stored on the row as `aliases`.
+  const ALIAS = {};
+  function alias(name, map) { const a = (ALIAS[name] = ALIAS[name] || {}); Object.entries(map).forEach(([k, v]) => (a[k.toLowerCase()] = (a[k.toLowerCase()] || []).concat(v))); built = false; }
 
   function build() {
     if (built) return;
@@ -50,7 +54,10 @@ window.DUNE_DB = (function () {
       base[k] = base[k].map((r) => {
         let id = r.id || `${k}:${slug(r.name)}`;
         if (seen[id]) id += "-" + ++seen[id]; else seen[id] = 1;
-        return Object.assign({}, r, { id, _t: k, src: r.src || "", book: bookOf(r.src) });
+        const out = Object.assign({}, r, { id, _t: k, src: r.src || "", book: bookOf(r.src) });
+        const al = ALIAS[k] && ALIAS[k][String(r.name).toLowerCase()];
+        if (al) out.aliases = Array.from(new Set((r.aliases || []).concat(al)));
+        return out;
       });
     });
     built = base;
@@ -58,7 +65,9 @@ window.DUNE_DB = (function () {
   const rows = (name) => (build(), built[name] || []);
   const tables = () => (build(), ORDER.filter((k) => built[k] && built[k].length).concat(Object.keys(built).filter((k) => !META[k])));
   const get = (id) => { build(); const t = String(id).split(":")[0]; return (built[t] || []).find((r) => r.id === id) || null; };
-  const find = (name, rowName) => rows(name).find((r) => r.name.toLowerCase() === String(rowName).toLowerCase()) || null;
+  // find(table, name): exact name first, then an alias
+  const find = (name, rowName) => { const n = String(rowName).toLowerCase(), list = rows(name);
+    return list.find((r) => r.name.toLowerCase() === n) || list.find((r) => (r.aliases || []).some((a) => a.toLowerCase() === n)) || null; };
 
   // all searchable text of a row
   function text(r) {
@@ -80,5 +89,5 @@ window.DUNE_DB = (function () {
   }
   function stats() { build(); return tables().map((k) => [k, built[k].length]); }
 
-  return { META, add, view, rows, tables, get, find, search, text, stats, slug, bookOf };
+  return { META, add, view, alias, rows, tables, get, find, search, text, stats, slug, bookOf };
 })();

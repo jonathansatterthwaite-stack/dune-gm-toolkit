@@ -34,7 +34,7 @@ window.DUNE = (function () {
     Communicate: ["Acting", "Bartering", "Charm", "Deceit", "Diplomacy", "Disguise", "Empathy", "Gossip", "Innuendo", "Inspiration", "Interrogation", "Intimidation", "Linguistics", "Listening", "Neurolinguistics", "Persuasion", "Teaching"],
     Discipline: ["Command", "Composure", "Espionage", "Infiltration", "Observe", "Precision", "Resolve", "Self-Control", "Survival (Desert)"],
     Move: ["Acrobatics", "Body Control", "Climb", "Dance", "Distance Running", "Drive", "Escaping", "Grace", "Pilot (Ornithopter)", "Stealth", "Swift", "Swim", "Unobtrusive", "Worm Rider"],
-    Understand: ["Advanced Technology", "Botany", "CHOAM Bureaucracy", "Cultural Studies", "Danger Sense", "Data Analysis", "Deductive Reasoning", "Ecology", "Emergency Medicine", "Etiquette", "Genetics", "Geology", "House Politics", "Imperial Politics", "Infectious Diseases", "Kanly", "Philosophy", "Physical Empathy", "Physics", "Poison", "Psychiatry", "Religion"],
+    Understand: ["Advanced Technology", "Botany", "CHOAM Bureaucracy", "Cultural Studies", "Danger Sense", "Data Analysis", "Deductive Reasoning", "Ecology", "Emergency Medicine", "Etiquette", "Genetics", "Geology", "House Politics", "Imperial Politics", "Infectious Diseases", "Kanly", "Philosophy", "Physical Empathy", "Physics", "Poison", "Psychiatry", "Religion", "Smuggling", "Surgery", "Traps", "Virology"],
   };
 
   // Example complications by skill (Core p.153).

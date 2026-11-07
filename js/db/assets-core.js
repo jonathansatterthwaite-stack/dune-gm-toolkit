@@ -5,7 +5,7 @@
   const R = [
     // ---- Personal: ranged weapons
     ["Lasgun", "Personal", "Ranged Weapon", "Laser, Ranged Weapon", 0, 194, "Continuous-wave laser pistol or rifle; 30 narrow-beam shots per cell. Good for destroying obstacles.", "Lasgun fire striking a shield causes an atomic-scale explosion (p.23)."],
-    ["Maula Pistol", "Personal", "Ranged Weapon", "Concealable, Quiet, Ranged Weapon", 0, 194, "Spring-loaded pistol firing poison darts up to about 40 m; silent, an assassin's favourite. The needle gun is a variant."],
+    ["Maula Pistol", "Personal", "Ranged Weapon", "Concealable, Quiet, Ranged Weapon", 0, 194, "Spring-loaded pistol firing poison darts up to about 40 m; silent, an assassin's favorite. The needle gun is a variant."],
     // ---- Personal: melee weapons
     ["Blade", "Personal", "Melee Weapon", "Melee Weapon", 0, 194, "Daggers, swords and rapiers of plasteel or damasteel; shields made them the standard weapon again.", "Different sizes and forms of blade may add keywords."],
     ["Bodkin", "Personal", "Melee Weapon", "Concealable, Melee Weapon, Quiet", 0, 194, "Tiny stabbing blade carried in a wrist sheath; easy to hide and to dispose of."],
@@ -26,7 +26,7 @@
     ["Memocorder", "Personal", "Communication and Information", "Infiltration, Secrecy, Technology", 0, 197, "Ixian black square that stores a stylus-written message and replays it through the reader's nerves; very hard to crack."],
     ["Ridulian Crystal", "Personal", "Communication and Information", "Crystal, Knowledge, Skills", 0, 197, "Book of molecule-thin crystal sheets — thousands of pages in about a centimetre. Easy to carry, easy to destroy.", "Quality depends on the contents and how useful they are."],
     // ---- Personal: tools and equipment
-    ["Baradye Pistol", "Personal", "Tools and Equipment", "Arrakis, Fremen, Signaling", 0, 197, "Fremen static-charge pistol that dyes a 20 m patch of sand a vivid colour for hours; signals, marks and distracts."],
+    ["Baradye Pistol", "Personal", "Tools and Equipment", "Arrakis, Fremen, Signaling", 0, 197, "Fremen static-charge pistol that dyes a 20 m patch of sand a vivid color for hours; signals, marks and distracts."],
     ["Cibus Hood", "Personal", "Tools and Equipment", "Disguise, Infiltration, Technology", 0, 197, "Ixian mask that hides the wearer's features and gives off no energy; the face seems different each time someone looks."],
     ["Dew Collector", "Personal", "Tools and Equipment", "Arrakis, Survival, Water", 0, 197, "Small egg-shaped device that gathers morning dew on Arrakis."],
     ["Fremkit", "Personal", "Tools and Equipment", "Desert, Fremen, Survival", 0, 197, "Fremen desert-survival kit (stilltent, paracompass, maker hooks, thumper, suit patches) good for about a month; patches fix a stillsuit tear for a day."],
@@ -37,7 +37,7 @@
     ["Paracompass", "Personal", "Tools and Equipment", "Navigation, Survival", 0, 198, "Hand compass reading local magnetic anomalies; essential in the wilds."],
     ["Poison Snooper", "Personal", "Tools and Equipment", "Detection, Security, Technology", 0, 198, "Handheld or ceiling-mounted scanner that checks food and drink for poison; Ixian and Richesian models compete.", "The GM may rule it detects any poison asset of equal or lower Quality automatically."],
     ["Probe, Ixian", "Personal", "Tools and Equipment", "Ixian, Knowledge, Secret Information, Technology", 0, 199, "Copies a living or recently dead mind into a questionable simulacrum; seen as skirting the Butlerian edicts. Shere blocks it; the later T-Probe does not."],
-    ["Sapho", "Personal", "Tools and Equipment", "Addictive, Mentat, Stimulant", 0, 199, "Ecazi root juice that sharpens the mind; favoured by Mentats, addictive, and stains the lips ruby."],
+    ["Sapho", "Personal", "Tools and Equipment", "Addictive, Mentat, Stimulant", 0, 199, "Ecazi root juice that sharpens the mind; favored by Mentats, addictive, and stains the lips ruby."],
     ["Stilltent", "Personal", "Tools and Equipment", "Fremen, Sealed, Survival", 0, 199, "Airtight tent that reclaims moisture, usually buried under sand with snorkel air tubes."],
     ["Suspensor, Personal", "Personal", "Tools and Equipment", "Anti-gravity, Holtzman, Mobility", 0, 199, "Low-drain Holtzman lift in belts and chairs; carries heavy loads but cannot fly or stop a long fall."],
     ["Thumper", "Personal", "Tools and Equipment", "Arrakis, Sandworm", 0, 199, "Spring-loaded stake that pounds the sand to summon a worm; candle-timed versions delay it."],
@@ -90,13 +90,13 @@
     ["Assassin", "Espionage", "Agents", "Cunning, Dangerous, Elusive", 0, 209, "Professional bound by the Assassins' Handbook, with contacts from the underworld to the nobility.", "", false],
     ["Corporate Spy", "Espionage", "Agents", "Elusive, Knowledgeable", 0, 209, "Agent inside a House's industrial operation with access to schematics and formulas.", "", false],
     ["Face Dancer", "Espionage", "Agents", "Elusive, Genetically Programmed, Indistinguishable", 0, 209, "Tleilaxu shapeshifter who can infiltrate almost anywhere; loyal to the Tleilaxu by design.", "", false],
-    ["Mentat Master of Assassins", "Espionage", "Agents", "Human Computer, Intelligent, Tricky", 0, 210, "Mentat who plans a House's assassinations and defences against them.", "", false],
+    ["Mentat Master of Assassins", "Espionage", "Agents", "Human Computer, Intelligent, Tricky", 0, 210, "Mentat who plans a House's assassinations and defenses against them.", "", false],
     ["Political Spy", "Espionage", "Agents", "Elusive, Knowledgeable, Tricky", 0, 210, "Informant on Landsraad politics, kanly plans and blackmail; catching one reveals an enemy.", "", false],
 
     // ---- Intrigue: favors and debts
     ["Debtor", "Intrigue", "Favors and Debts", "Desperate, Frightened, Paranoid", 0, 211, "Someone who owes you; call it in for money, shelter or a sudden resource.", "", false],
     ["Old Friendship", "Intrigue", "Favors and Debts", "Faithful, Reliable, Wily", 0, 211, "A long-cultivated friend who passes information, spies, or hides you.", "", false],
-    ["Service", "Intrigue", "Favors and Debts", "Reliable, Valuable", 0, 211, "An organisation in your pocket that can supply other assets within reason.", "", false],
+    ["Service", "Intrigue", "Favors and Debts", "Reliable, Valuable", 0, 211, "An organization in your pocket that can supply other assets within reason.", "", false],
     // ---- Intrigue: trade
     ["Land Rights", "Intrigue", "Trade", "Land, Production", 0, 211, "Rights to land where goods are produced; leasing them binds others to you but costs you output.", "Add keywords for the material, such as Scarce or Abundant.", false],
     ["Manufactured Goods", "Intrigue", "Trade", "Manufactured, Trade Goods", 0, 212, "Valuable finished goods that open doors, at the price of depending on your suppliers.", "Add keywords for the goods, such as Scarce or Abundant."],
@@ -112,7 +112,7 @@
     ["Courtesan", "Intrigue", "Contacts", "Attractive, Cunning, Resourceful", 0, 214, "Trained companion with access to the bedchambers of the powerful.", "", false],
     ["Ex-agent", "Intrigue", "Contacts", "Experienced, Intelligent, Wily", 0, 214, "A former operative you trust, good for a hiding place or word of enemy moves.", "", false],
     ["Ambitious Newcomer", "Intrigue", "Courtiers", "Ambitious, Eager, Pushy", 0, 214, "A young arrival at court eager to rise — and to be useful.", "", false],
-    ["Confidant of the Emperor", "Intrigue", "Courtiers", "Cunning, Paranoid, Ruthless", 0, 215, "One of the Emperor's favourites; opens doors, but their fall could drag you down.", "", false],
+    ["Confidant of the Emperor", "Intrigue", "Courtiers", "Cunning, Paranoid, Ruthless", 0, 215, "One of the Emperor's favorites; opens doors, but their fall could drag you down.", "", false],
     ["House Retainer", "Intrigue", "Courtiers", "Familiar, Loyal", 0, 215, "One of your House's loyal staff; see Creating Your House for building retainers.", "", false],
     ["Indebted Landowner", "Intrigue", "Courtiers", "Fallen, Indebted, Loyal or Disloyal", 0, 215, "A titled but impoverished noble — fiercely loyal or bitterly resentful.", "Pick Loyal or Disloyal.", false],
     ["Politician", "Intrigue", "Courtiers", "Cunning, Intelligent, Wily", 0, 215, "Veteran courtier who knows who is rising and falling, and how to dodge the fallout.", "", false],

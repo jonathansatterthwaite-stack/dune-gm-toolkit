@@ -144,7 +144,7 @@ window.DUNE_CH = (function () {
     T("Silent Attack", "Against an unaware target your first attack rolls 3d20 instead of 2d20. (Sardaukar or Fremen)", { faction: "Sardaukar", book: "Power and Pawns p.32" }),
     T("Strike from the Shadows", "−1 Difficulty on stealth tests made to get close enough to attack. (Sardaukar or Fremen)", { faction: "Sardaukar", book: "Power and Pawns p.32" }),
     // Power and Pawns: Face Dancers and Mentats (p.46–47)
-    T("Facedance", "At the start of a scene, reshape height, build, colouring, apparent age and sex — or copy a specific person. Those who know them can try an Understand vs. Discipline contest. Mannerisms need Copy.", { faction: "Tleilaxu Face Dancer", book: "Power and Pawns p.46" }),
+    T("Facedance", "At the start of a scene, reshape height, build, coloring, apparent age and sex — or copy a specific person. Those who know them can try an Understand vs. Discipline contest. Mannerisms need Copy.", { faction: "Tleilaxu Face Dancer", book: "Power and Pawns p.46" }),
     T("Copy", "Observe a target closely for a scene and pass an Average (D1) Understand test to learn their speech and mannerisms; only people who know them well can try to detect you.", { faction: "Tleilaxu Face Dancer", book: "Power and Pawns p.46" }),
     T("Innocent Form", "Take an unobtrusive or innocent-looking form: lower Difficulty on stealth or avoiding suspicion. Not usable while copying a specific person.", { faction: "Tleilaxu Face Dancer", book: "Power and Pawns p.46" }),
     T("Lightning Reflexes", "Spend 1 Momentum to act first in a round, regardless of initiative. (Face Dancer or Bene Gesserit)", { faction: "Tleilaxu Face Dancer", book: "Power and Pawns p.47" }),
@@ -213,13 +213,13 @@ window.DUNE_CH = (function () {
     T("Report Malfeasance", "Give a target the complication 'Reported to CHOAM' (someone an audit would hurt).", { faction: "CHOAM Agent", book: "Great Game p.18" }),
     // The Great Game: Spacing Guild (p.74–75)
     T("Code of Secrecy", "Attempts to make you reveal a client's secrets are one Difficulty step harder, even under torture.", { faction: "Spacing Guild", book: "Great Game p.74" }),
-    T("Guild Peace", "Spend 1 Momentum to add the trait 'Guild Peace' to a scene, usually penalising violence.", { faction: "Spacing Guild", book: "Great Game p.74" }),
+    T("Guild Peace", "Spend 1 Momentum to add the trait 'Guild Peace' to a scene, usually penalizing violence.", { faction: "Spacing Guild", book: "Great Game p.74" }),
     T("Guild Upbringing", "Gain 1 Momentum when you board a Heighliner or leave a planet's atmosphere.", { faction: "Spacing Guild", book: "Great Game p.74" }),
     T("Methodical Efficiency", "Re-roll one d20 on Understand tests about finance, commerce or bureaucracy.", { faction: "Spacing Guild", book: "Great Game p.74" }),
     T("Minor Spice Mutation", "Blue-within-blue eyes and hidden mutations mark you as Guild (see the book for the effect).", { faction: "Spacing Guild", book: "Great Game p.74" }),
     T("Nose for Cargo", "−1 Difficulty to detect contraband or find something in a cargo hold.", { faction: "Spacing Guild", book: "Great Game p.75" }),
     T("Play Both Ends Against the Middle", "Once per scene, as a neutral party in someone else's conflict, spend 4 group Momentum to gain 1 Determination if you have none.", { faction: "Spacing Guild", book: "Great Game p.75" }),
-    T("Power of Neutrality", "While recognisably Guild, enemies must spend 2 Momentum/Threat to attack or move against you physically — lost if you attack or duel.", { faction: "Spacing Guild", book: "Great Game p.75" }),
+    T("Power of Neutrality", "While recognizably Guild, enemies must spend 2 Momentum/Threat to attack or move against you physically — lost if you attack or duel.", { faction: "Spacing Guild", book: "Great Game p.75" }),
     T("Space Power", "Call on the Guild in military matters; grants access to a Heighliner asset you can't command.", { faction: "Spacing Guild", book: "Great Game p.75" }),
     T("Spacer", "In zero or low gravity (or ship artificial gravity), re-roll 1d20 on Move tests.", { faction: "Spacing Guild", book: "Great Game p.75" }),
     T("The Cylinder Must Get Through", "Re-roll a d20 on actions to deliver a message you carry; you may spend Determination on them whatever your drive statement.", { faction: "Spacing Guild", book: "Great Game p.75" }),
@@ -239,13 +239,13 @@ window.DUNE_CH = (function () {
   // Starter asset ideas by primary skill.
   const ASSETS = {
     Battle: [["Sword", true], ["Personal shield", true], ["Maula pistol", true], ["Kindjal", true], ["Squad of House troops", true], ["Lasgun", true]],
-    Communicate: [["Signet of office", true], ["Network of informants", false], ["Blackmail evidence", false], ["Favour owed by a courtier", false], ["Fine clothes and jewels", true]],
-    Discipline: [["Poison snooper", true], ["Loyal retainer", false], ["Secure safehouse", true], ["Hidden dagger", true], ["Reputation for honour", false]],
+    Communicate: [["Signet of office", true], ["Network of informants", false], ["Blackmail evidence", false], ["Favor owed by a courtier", false], ["Fine clothes and jewels", true]],
+    Discipline: [["Poison snooper", true], ["Loyal retainer", false], ["Secure safehouse", true], ["Hidden dagger", true], ["Reputation for honor", false]],
     Move: [["Ornithopter", true], ["Stillsuit", true], ["Groundcar", true], ["Desert survival kit", true], ["Contacts at the spaceport", false]],
     Understand: [["Library of filmbooks", true], ["Medical kit", true], ["Encrypted records", true], ["Knowledge of a rival's secrets", false], ["Research laboratory access", false]],
   };
   const AMBITIONS = {
-    Duty: ["Restore my family's honour", "See my House rise to the Landsraad's first rank"], Faith: ["Prove the prophecy true", "Bring my order's plan to fruition"],
+    Duty: ["Restore my family's honor", "See my House rise to the Landsraad's first rank"], Faith: ["Prove the prophecy true", "Bring my order's plan to fruition"],
     Justice: ["Bring my father's killer to account", "End the slave trade on my homeworld"], Power: ["Claim a seat at the Emperor's court", "Rule my own fief"],
     Truth: ["Uncover who betrayed my House", "Learn the secret of the spice"],
     Challenge: ["Master the impossible"], Glory: ["Be remembered for a thousand years"], Indulgence: ["Live in luxury beyond reproach"], Hate: ["Destroy my enemy utterly"], Honor: ["Never break my code"], Love: ["Keep my beloved safe"],

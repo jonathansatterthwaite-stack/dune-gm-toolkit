@@ -27,7 +27,7 @@
   };
   const GROUPS = [
     { key: "Battle", over: "Battle archetypes", title: "Warmasters", intro: "Fighters, soldiers and strategists. Some live for the blade, some never lift one, but all of them are lethal in their way.", src: "Core p.114" },
-    { key: "Communicate", over: "Communicate archetypes", title: "Socialites", intro: "Leaders, diplomats and courtiers whose weapons are words, favours and reputation.", src: "Core p.115" },
+    { key: "Communicate", over: "Communicate archetypes", title: "Socialites", intro: "Leaders, diplomats and courtiers whose weapons are words, favors and reputation.", src: "Core p.115" },
     { key: "Discipline", over: "Discipline archetypes", title: "Disciples", intro: "Those who master themselves first: analysts, heralds, infiltrators and protectors.", src: "Core p.116" },
     { key: "Move", over: "Move archetypes", title: "Adepts", intro: "Athletes, messengers, scouts and smugglers who live by speed and skill of body.", src: "Core p.117" },
     { key: "Understand", over: "Understand archetypes", title: "Academics", intro: "Empaths, scholars, spies and strategists, for whom knowledge is the deadliest weapon.", src: "Core p.118" },
@@ -89,7 +89,7 @@
     { key: "archetype", n: "Two", title: "Archetype", lead: "Pick the archetype that fits your concept. It sets your trait, your two best skills and suggests focuses and a talent." },
     { key: "skills", n: "Three", title: "Skills", lead: "Your archetype sets your starting skills. Now spend points to make the character yours." },
     { key: "focuses", n: "Four", title: "Focuses", lead: "Focuses are the specialities where your character really shines." },
-    { key: "talents", n: "Five", title: "Talents", lead: "Talents are special tricks and training that bend the rules in your favour." },
+    { key: "talents", n: "Five", title: "Talents", lead: "Talents are special tricks and training that bend the rules in your favor." },
     { key: "drives", n: "Six", title: "Drives", lead: "Drives are what your character believes in. Every test adds a drive's rating to a skill, so your beliefs shape how you succeed." },
     { key: "assets", n: "Seven", title: "Assets", lead: "Assets are the tools, contacts and leverage your character brings to the game." },
     { key: "finish", n: "Eight", title: "Finishing touches", lead: "A personal trait, an ambition, and the details that bring your character to life." },
@@ -229,7 +229,8 @@
 
   const allFocuses = (skill) => {
     const set = new Set(D.FOCUSES[skill] || []);
-    if (window.DUNE_DB) DUNE_DB.rows("focuses").forEach((f) => { if (f.skill === skill) set.add(f.name); });
+    // focuses that need a specialty are offered with the ones the books use ("Survival (Desert)"), never bare
+    if (window.DUNE_DB) DUNE_DB.rows("focuses").forEach((f) => { if (f.skill !== skill) return; if (f.specify) f.examples.forEach((x) => set.add(`${f.name} (${x})`)); else set.add(f.name); });
     return Array.from(set).sort();
   };
   function screenFocuses(c) {
@@ -299,7 +300,7 @@
         <button class="btn small ghost danger" data-act="chRm" data-list="assets" data-id="${x.id}" aria-label="Remove ${esc(x.name)}">×</button></div>`).join("") || `<span class="empty small">None chosen yet.</span>`}</div>
       ${ideas.length ? `<h3 class="cg-sub">Ideas for a ${esc(a.name)}</h3><div class="chips">${ideas.map(([n, t]) => `<button class="chip cg-pick ${has(n) ? "on" : ""}" data-act="cgAsset" data-n="${esc(n)}" data-t="${t ? 1 : 0}">${has(n) ? "✓ " : "+ "}${esc(n)} <span class="muted">${t ? "tangible" : "intangible"}</span></button>`).join("")}</div>` : ""}
       ${book.length ? `<h3 class="cg-sub">Personal gear from the books</h3><div class="chips">${book.map((x) => `<button class="chip cg-pick ${has(x.name) ? "on" : ""}" data-act="cgAsset" data-n="${esc(x.name)}" data-t="1" title="${esc(x.text)}">${has(x.name) ? "✓ " : "+ "}${esc(x.name)}</button>`).join("")}</div>` : ""}
-      <div class="mini"><input type="text" placeholder="Or name your own: a favour, a contact, a ship…" data-bind="chars.na.name" value="${esc(CS().na.name)}"/><label class="check small" style="margin:0"><input type="checkbox" data-bind="chars.na.tangible" data-type="bool" ${CS().na.tangible ? "checked" : ""}/> Tangible</label><button class="btn small" data-act="chAddAsset">Add</button></div>
+      <div class="mini"><input type="text" placeholder="Or name your own: a favor, a contact, a ship…" data-bind="chars.na.name" value="${esc(CS().na.name)}"/><label class="check small" style="margin:0"><input type="checkbox" data-bind="chars.na.tangible" data-type="bool" ${CS().na.tangible ? "checked" : ""}/> Tangible</label><button class="btn small" data-act="chAddAsset">Add</button></div>
       <p class="hint">Improved Resources gives one more asset and Specialist two more.</p>`;
   }
 

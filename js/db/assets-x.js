@@ -18,13 +18,13 @@
     ["Laboratory", "Personal", "Medical", "Equipment, Research", 0, "Power and Pawns p.61", "A secure lab for research, experiments and small batches of medicine, poison or gadgets."],
     ["Handheld Medical Scanner", "Personal", "Medical", "Detection, Medical, Technology", 0, "Power and Pawns p.61", "Costly Suk diagnostic scanner for readings and chemical analysis; can double as a poison snooper."],
     ["Pharmaceutical Factory", "Intrigue", "Trade", "Manufactured, Medicine, Trade Goods", 0, "Power and Pawns p.61", "Full-scale plant making medicines and spice derivatives; a source of House wealth."],
-    ["Hospital Ship", "Warfare", "Vehicles", "Medical, Shielded, Transport", 0, "Power and Pawns p.61", "Orbit-capable mobile hospital with labs, theatres and staff; its medical status opens doors."],
-    ["Cybernetic Implant", "Personal", "Cybernetics", "Implant, Hidden", 0, "Power and Pawns p.62", "Add the Implant keyword to a personal weapon, shield or tool to make it a cybernetic part; Hidden ones are concealed in the body.", "Exotic implants (suspensors, jet packs) need GM approval."],
+    ["Hospital Ship", "Warfare", "Vehicles", "Medical, Shielded, Transport", 0, "Power and Pawns p.61", "Orbit-capable mobile hospital with labs, theaters and staff; its medical status opens doors."],
+    ["Cybernetic Implant", "Personal", "Cybernetics", "Hidden, Implant", 0, "Power and Pawns p.62", "Add the Implant keyword to a personal weapon, shield or tool to make it a cybernetic part; Hidden ones are concealed in the body.", "Exotic implants (suspensors, jet packs) need GM approval."],
     // Power and Pawns: new intrigue assets (p.77–78)
-    ["Cast-iron Alibi", "Intrigue", "Defence", "Distraction, Lies, Location", 0, "Power and Pawns p.77", "Proof you couldn't have been there; mainly defensive.", "", false],
-    ["Fall Guy", "Intrigue", "Defence", "Accusation, Bystander, Rival", 0, "Power and Pawns p.77", "Someone else to take the blame — defensive, or an attack if pinned on a rival.", "", false],
+    ["Cast-iron Alibi", "Intrigue", "Defense", "Distraction, Lies, Location", 0, "Power and Pawns p.77", "Proof you couldn't have been there; mainly defensive.", "", false],
+    ["Fall Guy", "Intrigue", "Defense", "Accusation, Bystander, Rival", 0, "Power and Pawns p.77", "Someone else to take the blame — defensive, or an attack if pinned on a rival.", "", false],
     ["Favored Thing", "Intrigue", "Leverage", "Bonds, Connection, Knowledge, Loyalty", 0, "Power and Pawns p.78", "Knowing a person's passion, used to build friendship and trust quickly.", "", false],
-    ["Innocent Reputation", "Intrigue", "Defence", "Innocence, Kindness, Reputation", 0, "Power and Pawns p.78", "A name for gentleness that makes accusations of scheming hard to stick.", "", false],
+    ["Innocent Reputation", "Intrigue", "Defense", "Innocence, Kindness, Reputation", 0, "Power and Pawns p.78", "A name for gentleness that makes accusations of scheming hard to stick.", "", false],
     ["Planned Treachery", "Intrigue", "Leverage", "Cunning, Knowledge, Treachery", 0, "Power and Pawns p.78", "Inside knowledge of a plot against a powerful figure — to sell, thwart or join.", "", false],
     ["Secret Past", "Intrigue", "Blackmail", "Deceit, Revelation, Subterfuge", 0, "Power and Pawns p.78", "A hidden failing in someone's past, to control or predict them.", "", false],
     // The Great Game: speculative Heighliner variants (p.79) — no keywords of their own; use the Heighliner's (Core p.205)

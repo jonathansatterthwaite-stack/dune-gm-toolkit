@@ -24,7 +24,7 @@ window.DUNE_X = (function () {
 
   const OPPORTUNITIES = [
     { name: "Archaeological Find", text: "A relic of a lost age surfaces on House land — prestige, scholars, and unwelcome visitors follow." },
-    { name: "Diplomatic Overture", text: "A neighbouring House sends an envoy proposing a treaty. What do they really want?" },
+    { name: "Diplomatic Overture", text: "A neighboring House sends an envoy proposing a treaty. What do they really want?" },
     { name: "Discovery", text: "Rich ore, a new route, or a breakthrough in a House laboratory — if it can be secured." },
     { name: "Economic Boom", text: "Markets surge. Whoever moves fastest profits before the inevitable crash." },
     { name: "Festive Invitation", text: "Another House invites yours to a grand celebration. Ally or rival, the guest list is a battlefield." },
@@ -42,7 +42,7 @@ window.DUNE_X = (function () {
     { name: "Espionage", text: "Decisions leak to rivals. There is a traitor inside the House." },
     { name: "Disaster", text: "Fire, storm, quake or flood wrecks infrastructure. Repairs will be costly." },
     { name: "Plague", text: "Sickness spreads through the population. Act fast or count the dead." },
-    { name: "Public Scandal", text: "A House leader is implicated in scandal. Rumour fills every gap." },
+    { name: "Public Scandal", text: "A House leader is implicated in scandal. Rumor fills every gap." },
     { name: "Smugglers", text: "Goods vanish onto the black market, undercutting House trade." },
     { name: "Inconvenient Fortune", text: "Roll an opportunity — it falls to a rival House instead.", rival: "opp" },
   ];
@@ -200,9 +200,9 @@ window.DUNE_X = (function () {
   const PLANET = {
     type: ["Gas giant with habitable moons", "Tidally locked twilight world", "Barren rock with domed cities", "Volcanic forge world", "Habitable frozen world", "Habitable ocean world", "Habitable arid world", "Habitable forest world", "Habitable jungle world", "Habitable savanna world", "Mountainous world of deep valleys", "Mined-out husk of a world", "Storm-wracked world of endless rain", "Asteroid belt colony", "Garden world, nearly Earth-like", "Toxic world under heavy terraforming"],
     politics: ["Core world under the Imperial House", "Core world held by a Great House", "Core world held by a House Major", "Core world shared by squabbling Minor Houses", "Industrial world under Imperial governorship", "Agricultural fief of a House Major", "Mining concession of a Great House", "Military training world", "Guild-administered transit world", "CHOAM-managed trade hub", "Contested world claimed by two Houses", "Independent outlier with no allegiance", "Bene Gesserit-influenced retreat world", "Penal world under Imperial warders"],
-    military: ["Heavy fleet, large army, and orbital defences", "Strong army, modest fleet, medium defences", "Ground forces and medium planetary defences", "Police forces and a small patrol fleet", "Garrison of a single elite regiment", "Fleet only — a naval waystation", "Large training garrison, little else", "House guard and local militia", "Mercenary companies on contract", "Effectively undefended"],
+    military: ["Heavy fleet, large army, and orbital defenses", "Strong army, modest fleet, medium defenses", "Ground forces and medium planetary defenses", "Police forces and a small patrol fleet", "Garrison of a single elite regiment", "Fleet only — a naval waystation", "Large training garrison, little else", "House guard and local militia", "Mercenary companies on contract", "Effectively undefended"],
     population: ["Teeming core population, bureaucratic economy", "Dense cities built on heavy industry", "Average population, mixed economy", "Average population famed for academies and training", "Shipyards and spacecraft refitting", "Agriculture and fisheries", "Entertainment and luxury exports", "Low population: hunting reserves and wild preserves", "Low population: pleasure resorts and casinos", "Low population: religious retreats", "Refineries for ore or gas", "Smugglers' havens on the frontier", "Scattered subsistence villages", "Research stations and little else"],
-    feature: ["a sea that freezes solid each winter", "ruins older than the Imperium", "a moon that eclipses the sun daily", "storms visible from orbit", "floating cities above a toxic surface", "a single continent ringed by reefs", "forests of crystal-barked trees", "an ancient Butlerian battlefield", "aurora skies at every latitude", "a capital carved into a cliff face", "seasons that last a decade", "rivers of mineral-stained colour"],
+    feature: ["a sea that freezes solid each winter", "ruins older than the Imperium", "a moon that eclipses the sun daily", "storms visible from orbit", "floating cities above a toxic surface", "a single continent ringed by reefs", "forests of crystal-barked trees", "an ancient Butlerian battlefield", "aurora skies at every latitude", "a capital carved into a cliff face", "seasons that last a decade", "rivers of mineral-stained color"],
     prefix: ["Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta", "Theta", "Kappa", "Lambda", "Sigma", "Tau"],
     star: ["Pavonis", "Draconis", "Ceti", "Eridani", "Tucanae", "Lyrae", "Orionis", "Piscium", "Aquilae", "Centauri", "Carinae", "Hydri"],
     syl1: ["Kal", "Ver", "Ish", "Mor", "Tal", "Ses", "Ar", "Bel", "Cor", "Dun", "El", "Gar", "Hel", "Ix", "Lor", "Nar", "Or", "Ruv", "Syl", "Tor"],
@@ -215,7 +215,7 @@ window.DUNE_X = (function () {
     { max: 3, name: "Small", mod: -2, text: "Under a hundred Fremen; mobile, guarding an outpost or watching a city." },
     { max: 8, name: "Moderate", mod: -1, text: "One to two hundred; their own sietch but little water stored." },
     { max: 14, name: "Average", mod: 0, text: "Up to five hundred, with their own water store." },
-    { max: 18, name: "Large", mod: 1, text: "Nearly a thousand; a centre of stillsuit making and craft." },
+    { max: 18, name: "Large", mod: 1, text: "Nearly a thousand; a center of stillsuit making and craft." },
     { max: 20, name: "Huge", mod: 3, text: "Two thousand or more — a leading tribe of its region." },
   ];
   const SIETCH_INFLUENCE = [
@@ -234,7 +234,7 @@ window.DUNE_X = (function () {
     { name: "Polar sink", text: "Behind the Shield Wall: the least deadly land, where the cities huddle. Still brutally hot." },
     { name: "Open bled (erg)", text: "Dune seas hundreds of metres high. No shade but the lee of dunes; worms roam freely." },
     { name: "Rock outcrops", text: "Islands of stone in the sand sea — the only refuge for the stranded. Worms can't follow." },
-    { name: "Salt pan", text: "Baked, blinding flats. Worms avoid them, but there is no shade, no water, and mirages lure travellers deeper." },
+    { name: "Salt pan", text: "Baked, blinding flats. Worms avoid them, but there is no shade, no water, and mirages lure travelers deeper." },
     { name: "Sink / basin", text: "Cliff-ringed depressions sheltered from storms and worms. Often secretly claimed by smugglers or Fremen." },
     { name: "Shield Wall", text: "The vast mountain barrier. Passes, caves, and ambush points." },
   ];
