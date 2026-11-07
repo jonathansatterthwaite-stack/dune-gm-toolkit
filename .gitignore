@@ -12,3 +12,6 @@ desktop.ini
 
 # Full book text generated locally from your PDFs (tools/build-fulltext.js) — personal use, never commit
 *.local.js
+
+# Character art extracted locally from your PDFs (tools/extract-art.py) - personal use, never commit
+img/local/

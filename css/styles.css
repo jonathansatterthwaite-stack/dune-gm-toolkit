@@ -579,7 +579,15 @@ body.gx-open { overflow: hidden; }
 .cg-stamp, .cg-suits { position: absolute; top: -0.55rem; right: 0.7rem; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; padding: 1px 8px; border-radius: 999px; }
 .cg-stamp { background: var(--book-red); color: #fff; }
 .cg-suits { background: var(--good-soft); color: var(--good); border: 1px solid var(--good); }
-.cg-facard { flex-basis: 270px; }
+.cg-facard { flex-basis: 300px; min-height: 680px; padding-bottom: 0.5rem; }
+.cg-facard .cg-fac-text { position: relative; z-index: 1; }
+.cg-fac-art { flex: 1 1 auto; display: flex; align-items: flex-end; justify-content: center; margin: 0.2rem -0.9rem 0.3rem; min-height: 360px; }
+.cg-fac-art img { display: block; width: auto; height: auto; max-width: 100%; max-height: 430px; object-fit: contain; object-position: bottom center; filter: drop-shadow(0 6px 8px rgba(60, 35, 10, 0.25)); user-select: none; transition: transform 0.2s; }
+.cg-facard:hover .cg-fac-art img { transform: translateY(-3px); }
+.cg-emblem { width: 150px; height: 150px; margin-bottom: 4.5rem; display: grid; place-items: center; transform: rotate(45deg); border: 2px solid var(--book-red); outline: 1px solid var(--parch-edge); outline-offset: 7px; background: var(--parch-2); }
+.cg-emblem span { transform: rotate(-45deg); font-family: var(--serif); font-variant: small-caps; font-size: 2.6rem; letter-spacing: 0.04em; color: var(--book-red); }
+.cg-facard .pg { position: relative; z-index: 1; }
+#cgFacStrip .cg-banner { min-height: 680px; }
 .cg-glance { border-collapse: collapse; width: 100%; max-width: 560px; font-size: 0.92rem; background: var(--parch); }
 .cg-glance th { font-family: var(--serif); font-variant: small-caps; text-align: left; padding: 0.35rem 0.6rem; border-bottom: 2px solid var(--book-red); }
 .cg-glance td { padding: 0.3rem 0.6rem; border-bottom: 1px solid var(--parch-edge); }
@@ -631,6 +639,9 @@ body.gx-open { overflow: hidden; }
   .cg-steps button.on { padding-right: 0.7rem; }
   .cg-arch { flex-basis: 78vw; max-width: 300px; }
   .cg-banner { flex-basis: 62vw; max-width: 230px; }
+  .cg-facard { min-height: 600px; }
+  .cg-fac-art img { max-height: 340px; }
+  #cgFacStrip .cg-banner, .cg-strip .cg-banner { min-height: 0; align-self: flex-start; flex-basis: 52vw; }
   .cg-review { grid-template-columns: minmax(0, 1fr); }
   .cg-nav { position: sticky; bottom: 0; background: var(--bg); padding: 0.5rem 0; margin-bottom: 0; z-index: 5; }
 }

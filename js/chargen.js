@@ -141,19 +141,37 @@
     "Ginaz Swordmaster": "A full Swordmaster of Ginaz — among the finest blades in the Imperium.",
     "CHOAM Agent": "Serves two masters: the House, and the great trade combine that enriches it.",
   };
+  // Tall entries like the book's faction pages: text above, the character standing below.
+  // The art is extracted locally from your PDFs (tools/extract-art.py); elsewhere a drawn emblem stands in.
   function facCard(f, c) {
-    const on = c.faction === f.name;
+    const on = c.faction === f.name, title = f.none ? "House Agent" : f.name;
+    const art = window.DUNE_ART && window.DUNE_ART.factions[f.name];
+    const initials = title.split(/\s+/).filter((w) => /^[A-Z]/.test(w)).slice(0, 2).map((w) => w[0]).join("");
     return `<article class="cg-arch cg-facard ${on ? "on" : ""}" data-act="cgFaction" data-f="${esc(f.name)}" tabindex="0" role="button" aria-pressed="${on}">
       ${on ? `<span class="cg-stamp">Chosen</span>` : ""}
-      <h4>${f.none ? "House Agent" : esc(f.name)}</h4>
-      <p>${esc(FAC_INFO[f.name] || "")}</p>
-      <ul class="cg-diamonds">
-        <li><b>Additional Trait:</b> ${f.none ? "None" : esc(f.trait)}</li>
-        <li><b>Suggested Archetypes:</b> ${f.none ? "Any" : esc(f.suggest)}</li>
-        <li><b>Mandatory Talents:</b> ${f.none ? "None" : `${f.anyOf ? "One of " : ""}${esc(f.mandatory.join(", "))}${f.group ? `; ${esc(f.group.rule.replace(/^Master of Battle plus /, "plus "))}` : ""}`}</li>
-      </ul>
-      <span class="pg">${esc(f.book)}</span>
+      <div class="cg-fac-text">
+        <h4>${esc(title)}</h4>
+        <p>${esc(FAC_INFO[f.name] || "")}</p>
+        <ul class="cg-diamonds">
+          <li><b>Additional Trait:</b> ${f.none ? "None" : esc(f.trait)}</li>
+          <li><b>Suggested Archetypes:</b> ${f.none ? "Any" : esc(f.suggest)}</li>
+          <li><b>Mandatory Talents:</b> ${f.none ? "None" : `${f.anyOf ? "One of " : ""}${esc(f.mandatory.join(", "))}${f.group ? `; ${esc(f.group.rule.replace(/^Master of Battle plus /, "plus "))}` : ""}`}</li>
+        </ul>
+      </div>
+      <figure class="cg-fac-art">${art
+        ? `<img src="${esc(art.src)}" width="${art.w}" height="${art.h}" alt="${esc(title)}" decoding="async" draggable="false"/>`
+        : `<div class="cg-emblem" aria-hidden="true"><span>${esc(initials)}</span></div>`}</figure>
+      <span class="pg">${esc(f.book)}${art ? ` · art: ${esc(art.caption)}` : ""}</span>
     </article>`;
+  }
+
+  // local-only art manifest (same rule as the book text: never loaded on the public site)
+  if (!window.DUNE_ART && (location.protocol === "file:" || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname))) {
+    const s = document.createElement("script");
+    s.src = "js/db/art.local.js?t=" + Date.now();
+    s.onload = () => { if (G.S.tab === "characters" && CS().wiz) G.render(); };
+    s.onerror = () => {};
+    document.head.appendChild(s);
   }
 
   function archCard(a, c, f) {
