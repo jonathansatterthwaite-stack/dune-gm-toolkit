@@ -35,11 +35,11 @@ const ENUMS = {
   "focuses.set": ["Core", "Sand and Dust", "The Great Game", "From stat blocks"],
   "assets.cat": ["Personal", "Warfare", "Espionage", "Intrigue"],
   "houses.rank": ["Great", "Major", "Minor", "Imperial", "Unranked"],
-  "npcs.kind": ["Named", "Archetype"], "drives.set": ["Core", "Power and Pawns"],
+  "npcs.kind": ["Named", "Archetype", "Player character"], "drives.set": ["Core", "Power and Pawns"],
   "ventures.group": ["Trade", "Construction", "Boon"], "ventures.skill": SKILLS.concat(["varies", "—"]),
   "enmity.kind": ["Hatred", "Reason", "Rule"],
 };
-const SRC = /^(Core|Power and Pawns|Great Game|Sand and Dust) p\.\d+(–\d+)?$/;
+const SRC = /^(Core|Power and Pawns|Great Game|Sand and Dust|Agents of Dune|Agents of Dune (Cards|Folios|Handouts|Trackers|Zone Maps)|Masters of Dune|GM Toolkit|GM Screen) p\.\d+(–\d+)?$/;
 const UK = /\b\w*(colour|favour|defence|armour|honour|behaviour|neighbour|rumour|labour|organis|recognis|realis|travell|idolis|penalis|catalogue|centre|theatre|licence|offence|programme(?!d)|grey)\w*\b/i;
 // the Core's nine areas (p.88), plus two The Great Game uses: Logistics (House Alexin) and Farming and Industrial (House Mikarrol)
 const DOMAINS = "Artistic|Espionage|Farming|Industrial|Kanly|Military|Political|Religion|Science|Logistics|Farming and Industrial";

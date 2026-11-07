@@ -19,7 +19,20 @@ const BOOKS = [
   { key: "pp", title: "Power and Pawns", file: "DUNE_PowerAndPawns.pdf", re: /^(Power and Pawns|PP)\b/ },
   { key: "sd", title: "Sand and Dust", file: "DUNE_SandAndDust.pdf", re: /^(Sand and Dust|SD)\b/ },
   { key: "gg", title: "The Great Game", file: "DUNE_TheGreatGame.pdf", re: /^(The Great Game|Great Game|GG)\b/ },
+  // adventures and GM aids
+  { key: "aod", title: "Agents of Dune", file: "Agents of Dune Digital.pdf", re: /^Agents of Dune p\./ },
+  { key: "mod", title: "Masters of Dune", file: "masters of dune digital edition 18-04-23.pdf", re: /^Masters of Dune\b/ },
+  { key: "gmt", title: "GM Toolkit", file: "dune gm toolkit digital 1-4-21.pdf", re: /^GM Toolkit\b/ },
+  // play materials print no page numbers: their pages are numbered by PDF page
+  { key: "gms", title: "GM Screen", file: "gm screen inside digital 23-3-21.pdf", re: /^GM Screen\b/, unnumbered: true },
+  { key: "aodc", title: "Agents of Dune Cards", file: "Agents of Dune Cards Digital.pdf", re: /^Agents of Dune Cards\b/, unnumbered: true },
+  { key: "aodf", title: "Agents of Dune Folios", file: "Agents of Dune Folios_Print at home.pdf", re: /^Agents of Dune Folios\b/, unnumbered: true },
+  { key: "aodh", title: "Agents of Dune Handouts", file: "Agents of Dune Handouts_Digital.pdf", re: /^Agents of Dune Handouts\b/, unnumbered: true },
+  { key: "aodt", title: "Agents of Dune Trackers", file: "Agents of Dune Trackers_Digital.pdf", re: /^Agents of Dune Trackers\b/, unnumbered: true },
+  { key: "aodz", title: "Agents of Dune Zone Maps", file: "Agents of Dune Zone Maps_Digital.pdf", re: /^Agents of Dune Zone Maps\b/, unnumbered: true },
 ];
+// a footer line such as "DUNE | POWER AND PAWNS 27", "AGENTS OF DUNE / CAMPAIGN SET 9" or "D U N E G A M E M A S T E R' S T O O L K I T 13"
+const FOOTER = /^(D\s?U\s?N\s?E\s*\||AGENTS OF DUNE \/|MASTERS OF DUNE\s+\d|D U N E G A M E M A S T E R)/;
 
 // ---------- 1. extract and put each page into reading order ----------
 function pdfPages(file) {
@@ -70,7 +83,7 @@ function columns(input, depth) {
 function printedNumber(lines) {
   const tail = lines.filter(Boolean).slice(-4).concat(lines.filter(Boolean).slice(0, 2));
   for (const l of tail) {
-    const m = l.match(/^(\d{1,3})$/) || l.match(/(?:IMPERIUM|PAWNS|DUST|LANDSRAAD|GAME)\s+(\d{1,3})$/) || l.match(/^(\d{1,3})\s+[A-Z]/);
+    const m = l.match(/^(\d{1,3})$/) || l.match(/(?:IMPERIUM|PAWNS|DUST|LANDSRAAD|GAME|SET|DUNE|T)\s+(\d{1,3})$/) || l.match(/^(\d{1,3})\s+[A-Z]/);
     if (m) return +m[1];
   }
   return null;
@@ -121,6 +134,13 @@ function main() {
     if (!fs.existsSync(file)) { console.warn("missing", file); continue; }
     process.stdout.write(`Reading ${b.title}… `);
     const ordered = pdfPages(file).map(readingOrder);
+    if (ordered.length && !ordered[ordered.length - 1].some(Boolean)) ordered.pop();  // pdftotext ends on a form feed
+    if (b.unnumbered) {
+      pageNo[b.key] = ordered.map((_, i) => i + 1);
+      pages[b.key] = ordered;
+      console.log(`${ordered.length} pages (numbered by PDF page)`);
+      continue;
+    }
     // printed page numbers: read footers, fill gaps from the nearest known offset
     const printed = ordered.map(printedNumber);
     const offs = printed.map((n, i) => (n != null ? i - n : null));
@@ -173,7 +193,7 @@ function main() {
           if (inline && !l) break;
           if (!WHOLE_PAGE.has(t) && looksLikeHeading(l) && body.filter(Boolean).length > 1) break;
           if (WHOLE_PAGE.has(t) && win[j].i > idx + 1) break;
-          if (/^D\s?U\s?N\s?E\s*\|/.test(l) || /^\d{1,3}$/.test(l)) continue;
+          if (FOOTER.test(l) || /^\d{1,3}$/.test(l)) continue;
           body.push(l);
         }
         entries[r.id] = { book: b.key, page: p, how: "section", text: reflow(body) };
@@ -189,7 +209,7 @@ function main() {
   for (const b of BOOKS) {
     if (!pages[b.key]) continue;
     pages[b.key].forEach((lines, i) => {
-      const text = reflow(lines.filter((l) => !/^D\s?U\s?N\s?E\s*\|/.test(l)));
+      const text = reflow(lines.filter((l) => !FOOTER.test(l)));
       if (!text.trim()) return;
       const n = pageNo[b.key][i];
       const label = n > 0 ? `p.${n}` : `PDF page ${i + 1}`;

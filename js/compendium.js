@@ -3,8 +3,8 @@
   const G = window.GM, DB = window.DUNE_DB, D = window.DUNE;
   const { esc, uid } = G;
   const SK = D.SKILLS;
-  const BOOKS = ["Core", "Power and Pawns", "Sand and Dust", "The Great Game", "Homebrew"];
-  const BOOK_TAG = { Core: "Core", "Power and Pawns": "P&P", "Sand and Dust": "S&D", "The Great Game": "GG", Homebrew: "Brew", Other: "—" };
+  const BOOKS = ["Core", "Power and Pawns", "Sand and Dust", "The Great Game", "Agents of Dune", "Masters of Dune", "GM Toolkit", "GM Screen", "Homebrew"];
+  const BOOK_TAG = { Core: "Core", "Power and Pawns": "P&P", "Sand and Dust": "S&D", "The Great Game": "GG", "Agents of Dune": "AoD", "Masters of Dune": "MoD", "GM Toolkit": "GMT", "GM Screen": "Scr", Homebrew: "Brew", Other: "—" };
 
   G.ensure("db", { table: "assets", q: "", book: "", facet: "", sel: "", custom: {}, draft: null, limit: 200, deep: false });
   const ST = () => G.S.db;
@@ -110,6 +110,7 @@
     houseRoles: [["rights", "Rights and duties"], ["gg", "In House management"]],
     houseTemplates: [["minor", "As a House Minor"], ["major", "As a House Major"], ["great", "As a Great House"]],
     enmity: [["kind", "Table"], ["roll", "Roll (d20)"]],
+    adventures: [["kind", "Kind"], ["part", "Part of", "link:adventures"], ["npcs", "Characters", "links:npcs"]],
     ventures: [["group", "Type"], ["skill", "Skill"], ["cost", "Cost"], ["successes", "Successes needed"]],
     drives: [["set", "Set"], ["examples", "Example statements", "list"]],
     focuses: [["skill", "Skill"], ["specify", "Specialty"], ["examples", "Specialties in the books", "list"], ["set", "Listed in"], ["usedBy", "Used by", "uses"]],

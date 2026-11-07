@@ -23,6 +23,7 @@ window.DUNE_DB = (function () {
     ventures:      { group: "Houses", title: "House ventures", desc: "The Great Game's yearly House management ventures and their costs.", cols: [["group", "Type"], ["skill", "Skill"]], facet: "group" },
     planets:       { group: "World", title: "Planets", desc: "Worlds of the Imperium: system, ruling House, exports and places of interest.", cols: [["system", "System"], ["house", "House"]], facet: "" },
     organizations: { group: "World", title: "Factions and powers", desc: "The great powers of the Imperium and the factions of Arrakis.", cols: [["kind", "Kind"]], facet: "kind" },
+    adventures:    { group: "Adventures", title: "Adventures", desc: "Agents of Dune, the Masters of Dune campaign and the GM Toolkit: acts, chapters, campaign rules, intrigues and locations, with their NPCs.", cols: [["kind", "Kind"], ["part", "Part of"]], facet: "kind" },
     traits:        { group: "World", title: "Traits", desc: "Traits used in the books — reputations, House traits, conditions and scene traits.", cols: [["kind", "Kind"]], facet: "kind" },
     // only present when js/db/fulltext.local.js has been generated from your own PDFs (tools/build-fulltext.js)
     pages:         { group: "Books", title: "Book pages", desc: "Every page of the four books as text, from your own PDFs. Local only — never published.", cols: [["heading", "Starts with"]], facet: "" },
@@ -35,7 +36,10 @@ window.DUNE_DB = (function () {
   let built = false;
 
   const slug = (s) => String(s).toLowerCase().normalize("NFKD").replace(/[^\w]+/g, "-").replace(/^-|-$/g, "");
-  const bookOf = (src) => (/^Core/.test(src) ? "Core" : /Power and Pawns|^PP/.test(src) ? "Power and Pawns" : /Sand and Dust|^SD/.test(src) ? "Sand and Dust" : /Great Game|^GG/.test(src) ? "The Great Game" : src ? "Other" : "");
+  // the book a row comes from: the first source in its src. Agents of Dune's cards, folios and other play materials count as Agents of Dune.
+  const BOOKS = [["Core", /^Core\b/], ["Power and Pawns", /^(Power and Pawns|PP)\b/], ["Sand and Dust", /^(Sand and Dust|SD)\b/], ["The Great Game", /^(The Great Game|Great Game|GG)\b/],
+    ["Agents of Dune", /^Agents of Dune\b/], ["Masters of Dune", /^Masters of Dune\b/], ["GM Toolkit", /^GM Toolkit\b/], ["GM Screen", /^GM Screen\b/]];
+  const bookOf = (src) => { const s = String(src || "").trim(); const b = BOOKS.find(([, re]) => re.test(s)); return b ? b[0] : s ? "Other" : ""; };
 
   function add(name, rows) { (T[name] = T[name] || []).push(...rows); built = false; }
   // view(name, fn): rows computed on first use from data other scripts define (they may load after db.js).

@@ -509,6 +509,7 @@ body.gx-open { overflow: hidden; }
 .db-art-fig img { display: block; width: auto; height: auto; max-height: 340px; max-width: 100%; object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.25)); }
 .db-art-fig.k-crest img { max-height: 150px; }
 .db-art-fig.k-banner img { max-height: 300px; }
+.db-art-fig.k-portrait img { max-height: 230px; }
 .db-art-detail { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); gap: 1.2rem; align-items: start; }
 .db-art-fig.big img { max-height: min(70vh, 720px); }
 @media (max-width: 760px) {
