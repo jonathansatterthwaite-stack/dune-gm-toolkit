@@ -1,0 +1,19 @@
+    <div class="pools">
+      <div class="pool pool-threat" title="GM Threat pool (no maximum)">
+        <div class="pool-label">Threat</div>
+        <div class="pool-row">
+          <button class="pool-btn" data-act="pool" data-k="threat" data-d="-1" aria-label="Spend 1 Threat">−</button>
+          <div class="pool-value" id="threatValue">0</div>
+          <button class="pool-btn" data-act="pool" data-k="threat" data-d="1" aria-label="Add 1 Threat">+</button>
+        </div>
+      </div>
+      <div class="pool pool-momentum" title="Group Momentum pool (max 6)">
+        <div class="pool-label">Momentum <span class="pool-cap">/ 6</span></div>
+        <div class="pool-row">
+          <button class="pool-btn" data-act="pool" data-k="momentum" data-d="-1" aria-label="Spend 1 Momentum">−</button>
+          <div class="pool-value" id="momentumValue">0</div>
+          <button class="pool-btn" data-act="pool" data-k="momentum" data-d="1" aria-label="Add 1 Momentum">+</button>
+        </div>
+        <div class="pips" id="momentumPips"></div>
+      </div>
+    </div>

@@ -1,0 +1,20 @@
+{
+  "name": "dune-gm-toolkit",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Dune: Adventures in the Imperium desktop tools: Character maker, Lore and GM tools.",
+  "author": "Vardogyr",
+  "license": "UNLICENSED",
+  "main": "desktop/main.js",
+  "scripts": {
+    "character": "electron . --tool=character",
+    "lore": "electron . --tool=lore",
+    "gm": "electron . --tool=gm",
+    "build": "node desktop/build.js",
+    "audit-db": "node tools/audit-db.js"
+  },
+  "devDependencies": {
+    "electron": "45.2.3",
+    "electron-builder": "26.18.0"
+  }
+}

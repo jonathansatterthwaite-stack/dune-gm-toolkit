@@ -377,42 +377,51 @@ ${r.text}`;
   A.dbGo = (el) => { const r = rowFrom(el); if (!r) return; const s = ST(); s.sel = r.id; s.draft = null; if (s.table !== "*" && s.table !== r._t) { s.table = r._t; s.facet = ""; s.q = ""; } R(); };
   A.dbMore = () => { ST().limit += 200; R(); };
 
-  A.dbNpcRoster = (el) => { const n = rowFrom(el); if (!n) return; G.S.npcs.unshift(npcToRoster(n)); G.toast(`${n.name} saved to the NPC roster`); G.save(); };
-  A.dbNpcConflict = (el) => {
-    const n = rowFrom(el); if (!n) return;
-    const sk = G.conflictSkill();
-    G.addCombatant({ name: n.name, side: "opponents", tier: n.kind === "Named" ? "major" : "notable", req: n.skills[sk] || 4,
-      assets: (n.assets || []).map((a) => { const d = findRow("assets", a); return { id: uid(), name: a, q: d ? d.q || 0 : 0, def: /shield|armou?r/i.test(a) }; }) });
-    G.toast(`${n.name} added to the conflict`);
-  };
-  A.dbNpcCreator = (el) => {
-    const n = rowFrom(el); if (!n) return;
-    if (!G.actions.chFromNpc) return;
-    // reuse the NPCs tab's converter via a temporary roster entry, then carry over talents and assets
-    const r = npcToRoster(n); G.S.npcs.unshift(r);
-    G.actions.chFromNpc({ dataset: { npc: r.id } });
-    G.S.npcs = G.S.npcs.filter((x) => x.id !== r.id);
-    const ch = G.S.chars.list.find((c) => c.id === G.S.chars.sel);
-    if (ch) {
-      ch.abilities = [];
-      ch.talents = (n.talents || []).filter((t) => findRow("talents", t)).map((t) => { const m = t.match(/^(.*?)\s*\((.*)\)$/); return { id: uid(), name: m ? findRow("talents", t).name : t, param: m ? m[2] : "" }; });
-      ch.assets = (n.assets || []).map((a) => { const d = findRow("assets", a); return { id: uid(), name: a, tangible: d ? d.tangible !== false : true, q: d ? d.q || 0 : 0 }; });
-      ch.details.notes = [n.text, "Source: " + n.src].join("\n");
-    }
-    R();
-  };
-  A.dbGiveAsset = (el) => {
-    const r = rowFrom(el), ch = G.S.chars.list.find((c) => c.id === G.S.chars.sel); if (!r || !ch) return;
-    ch.assets.push({ id: uid(), name: r.name, tangible: r.tangible !== false, q: r.q || 0 });
-    G.toast(`${r.name} given to ${ch.name || "the character"}`); G.save();
-  };
-  A.dbGiveTalent = (el) => {
-    const r = rowFrom(el), ch = G.S.chars.list.find((c) => c.id === G.S.chars.sel); if (!r || !ch) return;
-    if (ch.talents.some((t) => t.name === r.name)) { G.toast(`${ch.name || "The character"} already has ${r.name}`); return; }
-    ch.talents.push({ id: uid(), name: r.name, param: "" });
-    G.toast(`${r.name} given to ${ch.name || "the character"}`); G.save();
-  };
-  A.dbSceneTrait = (el) => { const r = rowFrom(el); if (!r) return; G.addSceneTrait(r.name, "trait"); G.toast(`Added “${r.name}” to the scene`); };
+  // These change data the GM tools or the Character maker own, so they are sent there as requests (GM.remote);
+  // the handlers below run in the owning tool only.
+  A.dbNpcRoster = (el) => { const n = rowFrom(el); if (n) G.remote("gm", "dbNpcRoster", { id: n.id }, { label: n.name + " sent to the NPC roster in GM tools" }); };
+  A.dbNpcConflict = (el) => { const n = rowFrom(el); if (n) G.remote("gm", "dbNpcConflict", { id: n.id }, { label: n.name + " sent to the conflict in GM tools" }); };
+  A.dbNpcCreator = (el) => { const n = rowFrom(el); if (n) G.remote("character", "dbNpcCreator", { id: n.id }, { focus: true, label: "Opening " + n.name + " in the Character maker" }); };
+  A.dbGiveAsset = (el) => { const r = rowFrom(el); if (r) G.remote("character", "dbGiveAsset", { id: r.id }); };
+  A.dbGiveTalent = (el) => { const r = rowFrom(el); if (r) G.remote("character", "dbGiveTalent", { id: r.id }); };
+  A.dbSceneTrait = (el) => { const r = rowFrom(el); if (r) G.addSceneTrait(r.name, "trait"); };
+  const IN = G.inbox, rowOf = (p) => getRow(p.id);
+  if (G.tool === "gm") Object.assign(IN, {
+    dbNpcRoster: (p) => { const n = rowOf(p); if (!n) return; G.S.npcs.unshift(npcToRoster(n)); G.toast(n.name + " saved to the NPC roster"); },
+    dbNpcConflict: (p) => {
+      const n = rowOf(p); if (!n) return;
+      const sk = G.conflictSkill();
+      G.inbox.addCombatant({ name: n.name, side: "opponents", tier: n.kind === "Named" ? "major" : "notable", req: n.skills[sk] || 4,
+        assets: (n.assets || []).map((a) => { const d = findRow("assets", a); return { id: uid(), name: a, q: d ? d.q || 0 : 0, def: /shield|armou?r/i.test(a) }; }) });
+    },
+  });
+  if (G.tool === "character") Object.assign(IN, {
+    dbNpcCreator: (p) => {
+      const n = rowOf(p); if (!n || !G.actions.chFromNpc) return;
+      // reuse the roster converter via a temporary entry, then carry over talents and assets
+      const r = npcToRoster(n); G.S.npcs.unshift(r);
+      G.actions.chFromNpc({ dataset: { npc: r.id } });
+      G.S.npcs = G.S.npcs.filter((x) => x.id !== r.id);
+      const ch = G.S.chars.list.find((c) => c.id === G.S.chars.sel);
+      if (ch) {
+        ch.abilities = [];
+        ch.talents = (n.talents || []).filter((t) => findRow("talents", t)).map((t) => { const m = t.match(/^(.*?)\s*\((.*)\)$/); return { id: uid(), name: m ? findRow("talents", t).name : t, param: m ? m[2] : "" }; });
+        ch.assets = (n.assets || []).map((a) => { const d = findRow("assets", a); return { id: uid(), name: a, tangible: d ? d.tangible !== false : true, q: d ? d.q || 0 : 0 }; });
+        ch.details.notes = [n.text, "Source: " + n.src].join("\n");
+      }
+    },
+    dbGiveAsset: (p) => {
+      const r = rowOf(p), ch = G.S.chars.list.find((c) => c.id === G.S.chars.sel); if (!r || !ch) { G.toast("Pick a character first"); return; }
+      ch.assets.push({ id: uid(), name: r.name, tangible: r.tangible !== false, q: r.q || 0 });
+      G.toast(r.name + " given to " + (ch.name || "the character"));
+    },
+    dbGiveTalent: (p) => {
+      const r = rowOf(p), ch = G.S.chars.list.find((c) => c.id === G.S.chars.sel); if (!r || !ch) { G.toast("Pick a character first"); return; }
+      if (ch.talents.some((t) => t.name === r.name)) { G.toast((ch.name || "The character") + " already has " + r.name); return; }
+      ch.talents.push({ id: uid(), name: r.name, param: "" });
+      G.toast(r.name + " given to " + (ch.name || "the character"));
+    },
+  });
   A.dbStarmap = (el) => { const r = rowFrom(el); if (r && G.showOnStarmap) G.showOnStarmap(r.name); };
   A.dbCopy = (el) => {
     const r = rowFrom(el); if (!r) return;

@@ -5,7 +5,6 @@
   D.ROLES = D.ROLES.concat(X.EXTRA_ROLES);
   const ALL_DRIVES = D.DRIVES.concat(Object.keys(X.COURT_DRIVES));
   const npcDrives = (n) => n.driveNames || D.DRIVES;
-  const STORE_KEY = "duneGM.v1";
 
   // ---------- helpers ----------
   const $ = (s) => document.querySelector(s);
@@ -25,7 +24,7 @@
       threat: 0,
       momentum: 0,
       players: 4,
-      house: "minor",
+      threatHouse: "minor",
       history: [],
       roller: { side: "pc", skillName: "Battle", skill: 6, driveName: "Duty", drive: 6, focus: false, difficulty: 1, comp: 1, bonus: 0, fromMomentum: 0, autoOne: false, assistants: [], npcId: "", label: "", contest: false },
       last: null,
@@ -47,11 +46,12 @@
     };
   }
 
+  // saved data comes from js/store.js: this tool's own keys plus read-only copies of the other tools' data
+  const STORE = window.DUNE_STORE, TOOL = STORE.TOOL, TOOL_TABS = STORE.TOOLS[TOOL].tabs.map((t) => t[0]);
   function load() {
     try {
-      const raw = localStorage.getItem(STORE_KEY);
-      if (!raw) return defaults();
-      const saved = JSON.parse(raw);
+      const saved = STORE.load();
+      if (typeof saved.house === "string") { saved.threatHouse = saved.threatHouse || saved.house; delete saved.house; }
       const base = defaults();
       // keep module-owned keys (house, worlds, …) that defaults() doesn't know about
       for (const k of Object.keys(saved)) if (!(k in base)) base[k] = saved[k];
@@ -64,15 +64,14 @@
         } else base[k] = saved[k];
       }
       base.ui = Object.assign(defaults().ui, saved.ui || {});
+      if (!TOOL_TABS.includes(base.tab)) base.tab = TOOL_TABS[0];
       return base;
     } catch (e) {
       return defaults();
     }
   }
   let S = load();
-  function save() {
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) { /* storage unavailable: keep working in memory */ }
-  }
+  function save() { STORE.save(S); }
 
   // ---------- toasts ----------
   function toast(msg) {
@@ -109,6 +108,7 @@
 
   function renderPools(bumpT, bumpM) {
     const tv = $("#threatValue"), mv = $("#momentumValue");
+    if (!tv || !mv) return;
     tv.textContent = S.threat;
     mv.textContent = S.momentum;
     if (bumpT) { tv.classList.remove("bump"); void tv.offsetWidth; tv.classList.add("bump"); }
@@ -117,7 +117,7 @@
     const last = S.history[S.history.length - 1];
     $("#undoBtn").disabled = !last;
     $("#undoBtn").title = last ? `Undo: ${last.label || "pool change"}` : "Nothing to undo";
-    const house = D.HOUSE_THREAT.find((h) => h.id === S.house);
+    const house = D.HOUSE_THREAT.find((h) => h.id === S.threatHouse);
     $("#sessionInfo").textContent = `${S.players} players · ${house ? house.name : ""}`;
   }
 
@@ -774,7 +774,8 @@
   function render() {
     document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.tab === S.tab));
     const views = Object.assign({ roller: renderRoller, conflict: renderConflict, npcs: renderNpcs, scene: renderScene, hooks: renderHooks, reference: renderReference }, GM.views);
-    $("#main").innerHTML = (views[S.tab] || renderRoller)();
+    if (!TOOL_TABS.includes(S.tab)) S.tab = TOOL_TABS[0];
+    $("#main").innerHTML = (views[S.tab] || (() => ""))();
     renderPools();
     GM.afterRender.forEach((f) => f(S.tab));
   }
@@ -967,7 +968,15 @@
 
   document.addEventListener("click", (e) => {
     const tab = e.target.closest("[data-tab]");
-    if (tab) { S.tab = tab.dataset.tab; save(); render(); window.scrollTo(0, 0); return; }
+    if (tab) {
+      const t = tab.dataset.tab;
+      if (!TOOL_TABS.includes(t)) {
+        const other = Object.keys(STORE.TOOLS).find((k) => STORE.TOOLS[k].tabs.some((x) => x[0] === t));
+        if (other) GM.remote(other, "openTab", { tab: t }, { focus: true, quiet: true });
+        return;
+      }
+      S.tab = t; save(); render(); window.scrollTo(0, 0); return;
+    }
     const el = e.target.closest("[data-act]");
     if (!el || el.disabled) return;
     const fn = actions[el.dataset.act] || GM.actions[el.dataset.act];
@@ -1007,13 +1016,13 @@
   });
   document.addEventListener("keydown", (e) => {
     if ((e.target.closest && e.target.closest("input, textarea, select")) || e.ctrlKey || e.metaKey || e.altKey) return;
-    if ((e.key === "r" || e.key === "R") && S.tab === "roller") { e.preventDefault(); doRoll(); }
+    if ((e.key === "r" || e.key === "R") && S.tab === "roller" && TOOL === "gm") { e.preventDefault(); doRoll(); }
   });
 
   // ---------- session dialog ----------
   function openSessionDialog() {
     const dlg = $("#sessionDialog");
-    $("#sessHouse").innerHTML = D.HOUSE_THREAT.map((h) => `<option value="${h.id}" ${S.house === h.id ? "selected" : ""}>${h.name} (${h.perPlayer}/player)</option>`).join("");
+    $("#sessHouse").innerHTML = D.HOUSE_THREAT.map((h) => `<option value="${h.id}" ${S.threatHouse === h.id ? "selected" : ""}>${h.name} (${h.perPlayer}/player)</option>`).join("");
     $("#sessPlayers").value = S.players;
     $("#sessClearMomentum").checked = false;
     $("#sessClearLog").checked = false;
@@ -1029,7 +1038,7 @@
       if (dlg.returnValue !== "ok") return;
       const h = D.HOUSE_THREAT.find((x) => x.id === $("#sessHouse").value);
       S.players = clamp(+$("#sessPlayers").value || 1, 1, 10);
-      S.house = h.id;
+      S.threatHouse = h.id;
       const target = h.perPlayer * S.players;
       adjust(target - S.threat, $("#sessClearMomentum").checked ? -S.momentum : 0, "New session", { force: true });
       if ($("#sessClearLog").checked) S.log = [];
@@ -1048,14 +1057,54 @@
     views: {}, actions: {}, onChange: [], onInput: [], afterRender: [],
     // give a module its own top-level state key, filling in any missing fields
     ensure(key, def) { S[key] = Object.assign(def, S[key] || {}); return S[key]; },
-    // jump to the Dice tab with a pre-filled test
-    prefillRoll(o) { Object.assign(S.roller, { side: "pc", npcId: "", focus: false, bonus: 0, autoOne: false, contest: false }, o); S.tab = "roller"; save(); render(); window.scrollTo(0, 0); },
-    addSceneTrait(name, kind) { S.scene.traits.push({ id: uid(), name, rank: 1, kind: kind || "trait" }); save(); },
-    addSceneTask(name, req, peril) { S.scene.tasks.push({ id: uid(), name, req, progress: 0, peril: !!peril }); save(); },
+    tool: TOOL, tools: STORE.TOOLS,
+    // whether this tool may edit a saved key (it owns it)
+    canEdit: (key) => STORE.owns(key),
+    // ask the tool that owns some data to change it. Runs here if this tool owns it; otherwise it is sent as a
+    // request that the owner carries out (opening that tool first when opts.focus is set)
+    remote(tool, type, payload, opts) {
+      opts = opts || {};
+      if (tool === TOOL) { const fn = GM.inbox[type]; if (fn) { fn(payload || {}); save(); render(); } return; }
+      STORE.send(tool, { type, payload: payload || {}, focus: !!opts.focus });
+      if (opts.focus) STORE.open(tool);
+      if (!opts.quiet) toast(opts.label || "Sent to " + STORE.TOOLS[tool].short);
+    },
+    // handlers for requests from other tools, by type (each tool registers the ones for data it owns)
+    inbox: {
+      openTab: (p) => { if (TOOL_TABS.includes(p.tab)) { S.tab = p.tab; window.scrollTo(0, 0); } },
+    },
+    openTool: (t) => STORE.open(t),
+    // jump to the GM tools' Dice tab with a pre-filled test
+    prefillRoll(o) { GM.remote("gm", "prefillRoll", o, { focus: true, label: "Sent to the dice roller in GM tools" }); },
+    addSceneTrait(name, kind) { GM.remote("gm", "addSceneTrait", { name, kind }, { label: "Sent \u201c" + name + "\u201d to the scene in GM tools" }); },
+    addSceneTask(name, req, peril) { GM.remote("gm", "addSceneTask", { name, req, peril }); },
     // conflict helpers for other modules
-    addCombatant(o) { S.conflict.combatants.push(newCombatant(o)); save(); },
+    addCombatant(o) { GM.remote("gm", "addCombatant", o, { label: "Sent " + (o.name || "a combatant") + " to the conflict in GM tools" }); },
     conflictSkill: () => CONFLICT_TYPES[S.conflict.type].skill,
     focusSkill, findNpc: (id) => findNpc(id),
-    start: () => render(),
+    start: () => {
+      // requests from the other tools, and their data changing underneath this one
+      STORE.onMessage((m) => {
+        const fn = GM.inbox[m.type]; if (!fn) return;
+        fn(m.payload || {}); save(); render();
+      });
+      STORE.onExternal((t, data) => {
+        Object.assign(S, data);
+        // don't redraw under someone typing; catch up when they leave the field
+        const a = document.activeElement;
+        if (a && a.matches && a.matches("input[type=text], input:not([type]), input[type=number], input[type=search], textarea")) { pendingRender = true; return; }
+        render();
+      });
+      document.addEventListener("focusout", () => { if (pendingRender) { pendingRender = false; setTimeout(render, 0); } });
+      render();
+    },
   };
+  let pendingRender = false;
+  // requests that change the GM tools' data: only the GM tools carry them out
+  if (TOOL === "gm") Object.assign(GM.inbox, {
+    prefillRoll: (o) => { Object.assign(S.roller, { side: "pc", npcId: "", focus: false, bonus: 0, autoOne: false, contest: false }, o); S.tab = "roller"; window.scrollTo(0, 0); },
+    addSceneTrait: (p) => { S.scene.traits.push({ id: uid(), name: p.name, rank: 1, kind: p.kind || "trait" }); toast("Scene trait added: " + p.name); },
+    addSceneTask: (p) => { S.scene.tasks.push({ id: uid(), name: p.name, req: p.req, progress: 0, peril: !!p.peril }); },
+    addCombatant: (o) => { S.conflict.combatants.push(newCombatant(o)); toast((o.name || "A combatant") + " joined the conflict"); },
+  });
 })();

@@ -15,4 +15,6 @@
     label();
   };
   label();
+  // the header's tool switcher: open (or bring forward) the Character maker, Lore or GM tools
+  G.actions.openTool = (el) => { if (el.dataset.tool && el.dataset.tool !== G.tool) G.openTool(el.dataset.tool); };
 })();

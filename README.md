@@ -1,24 +1,37 @@
 # Dune GM Toolkit
 
-A browser-based GM screen for **Dune: Adventures in the Imperium** (Modiphius, 2d20). There's nothing to install and no build step, and it works offline.
+Three desktop apps for **Dune: Adventures in the Imperium** (Modiphius, 2d20), built for Windows desktops:
 
-### ▶ [Launch the toolkit](https://jonathansatterthwaite-stack.github.io/dune-gm-toolkit/)
+| App | Tabs | Owns |
+|---|---|---|
+| **Dune Character Maker** | Guided character creation, the character editor and the character list | Characters |
+| **Dune Lore** | Compendium, Timeline, Galaxy map, Worlds, House | The database's homebrew, timelines, the galaxy map, generated worlds, House management |
+| **Dune GM Tools** | Dice, Conflict, NPCs, Scene, Hooks, Reference | Threat and Momentum, rolls and the log, the conflict, the NPC roster, the scene, saved hooks |
 
-It runs straight from GitHub Pages and updates whenever `main` changes. Everything you do is saved in your browser's local storage on your device, so it's still there next time. Nothing is sent anywhere.
+**They work together.** All three read each other's data live: Lore's Compendium can give a talent to the character open in the Character maker, GM tools see the characters and the timeline. But each app edits only its own data. When one app needs a change in another (Lore's **Save to NPC roster**, a character's **Roll** button, a hazard sent to the scene), it sends a request and the owning app makes the change. It opens or comes to the front if needed, and the request waits until it is running. Switch apps with the buttons in the header or **Tools** in the menu (Ctrl+1, 2, 3).
 
-**To use it offline:**
+**Your data** is in `Documents\Dune GM\`: `character.json`, `lore.json` and `gm.json`, plus an `inbox` folder for requests between the apps. Copy the folder to back up or move a campaign; **File › Open data folder** takes you there.
 
-1. Click **[Download the toolkit (ZIP)](https://github.com/jonathansatterthwaite-stack/dune-gm-toolkit/archive/refs/heads/main.zip)**.
-2. Unzip it.
-3. Double-click `index.html`.
+## Building the apps
 
-The offline copy keeps its own saved data, separate from the web version's.
+Needs [Node.js](https://nodejs.org/) (22 or newer).
+
+```bash
+npm install
+npm run build
+```
+
+This writes `Dune Character Maker.exe`, `Dune Lore.exe` and `Dune GM Tools.exe` to `desktop\dist\`. They're portable: no installer, and they can run from any folder, but keep the three together so each can open the others. If you've built the local book text and art (below), it's included in the exes, so they're for your own use; don't share them.
+
+While working on the code, run an app straight from the source with `npm run character`, `npm run lore` or `npm run gm`, or open `character.html`, `lore.html` or `gm.html` in a browser (they then share their data through the browser's storage). The pages are generated: edit `desktop/template.html` or `js/tools.js`, then run `node tools/make-pages.js`.
+
+**Moving from the old browser version:** open `export-browser-data.html` in the browser you used, save the file, then choose **File › Import browser data…** in any of the apps. The website version (GitHub Pages) has been retired.
 
 ## What's in it
 
 | Tab | What it does |
 |---|---|
-| **Header** | Shows the Threat and Momentum pools. Momentum is capped at 6, and anything over the cap is lost with a warning. It also has Undo, End scene (−1 Momentum, and Resist Defeat refreshes) and New session (sets starting Threat from the House type × number of players). |
+| **Header** (GM tools) | Shows the Threat and Momentum pools. Momentum is capped at 6, and anything over the cap is lost with a warning. It also has Undo, End scene (−1 Momentum, and Resist Defeat refreshes) and New session (sets starting Threat from the House type × number of players). |
 | **Dice** | Rolls a full skill test: Skill + Drive, focus crits, Difficulty 0–5+, complication range 1–5, and up to 3 bonus d20 (paid with Momentum, Threat, or a mix). It covers the Determination auto-1 and re-roll, and assistants who add 1d20 each. It shows live odds of passing, then lets you bank or spend Momentum, buy off complications, and chain a contest. NPC mode pays from Threat. Press **R** to roll. |
 | **Conflict** | Tracks each side's combatants, defeat tracks (skill + Quality of defensive assets), hits (2 + asset Quality, boosted with Momentum), and Resist Defeat (1 + Quality). It also handles Keep the Initiative, rounds, assets, complications, zones, and +3 minor NPCs at once. |
 | **NPCs** | Generates Minor, Notable and Major NPCs by the Core rules (p.137, p.240) from 35 roles, including the Power and Pawns outsiders (Face Dancer, Ginaz swordmaster, Tleilaxu, Ixian, courtier, CHOAM). It can optionally swap in one of the six Power and Pawns drives. Save NPCs to a roster, roll for them, or drop them into a conflict. |
@@ -55,6 +68,8 @@ Rules numbers (costs, bands, dice), keywords and stat blocks follow the books, w
 - `js/db.js` is the rules database engine (`window.DUNE_DB`): tables, ids, search and views over data the other tools already hold.
 - `js/db/*.js` are the database tables: `assets-core.js` and `assets-x.js` (assets), `npcs-core.js` and `npcs-x.js` (NPC stat blocks), `houses.js`, `planets.js`, and `rules.js` (House creation, roles, enmity, factions, traits, focuses, drives and the views). `adventures.js` holds the published adventures: the Agents of Dune starter set (with its pregenerated characters, cards and folios), the Masters of Dune campaign and the GM Toolkit. It adds their NPCs, assets (including Masters of Dune's spaceships and stations), House Nagara and its worlds, the cards' traits and complications, and an **Adventures** table of acts, chapters, campaign rules, intrigues and locations, each listing its characters. `lore.js` holds lore notes from the Dune novels, summarized from the [Dune Wiki](https://dune.fandom.com/). They appear in the Compendium under **In the novels**, labeled by canon (Frank Herbert's novels, the Brian Herbert and Kevin J. Anderson novels, or the non-canon Dune Encyclopedia), and are flagged where they differ from the RPG books. They never change the RPG's own values.
 - `css/imperial.css` is the Imperial theme, the default look: smoky charcoal with gold line work. It has pointed-arch frames for character art, stepped corner pieces on cards, a pointed frame on the open tab, eight-point stars for the timeline's events and dividers, and blue-and-gold cloud accents. All of it is original SVG line work, generated by `python tools/gen-imperial.py`. The **Parchment** button in the top bar switches to the original light theme; `js/theme.js` remembers the choice.
+- `desktop/main.js` and `desktop/preload.js` are the Electron shell: one codebase that runs as any of the three apps, the shared data files, the request inboxes and the menus. `desktop/build.js` builds the three exes.
+- `js/tools.js` says which tabs and which saved data belong to each app; `js/store.js` loads and saves through it, and `GM.remote` sends requests to the owning app.
 - `js/compendium.js` is the Compendium tab: browsing, search, links between entries, hand-offs to the other tools, homebrew and export.
 - `js/timeline.js` is the Timeline tab and the timeline engine: which events a branch sees, and an entry "as of" a year. `js/db/timeline.js` holds the eras, the built-in timelines and their events. The novels' years come from the Dune Wiki's timeline of Frank Herbert's novels, and events note where the RPG books give a different year. Your own timelines and events are saved with the rest of the app's state.
 - `tools/build-fulltext.js` builds `js/db/fulltext.local.js` from your PDFs (the four rulebooks, Agents of Dune with its cards, folios, handouts, trackers and zone maps, Masters of Dune, the GM Toolkit and the GM Screen): it puts each page into reading order (splitting two- and three-column layouts), matches every database entry to its section by page reference and heading, and stores every page as text. Personal use only; the output is gitignored.

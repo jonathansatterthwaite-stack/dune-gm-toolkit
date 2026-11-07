@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Export browser data</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/imperial.css" />
+  <style>main { max-width: 680px; margin: 3rem auto; }</style>
+</head>
+<body>
+  <main class="card">
+    <h2>Export your browser data</h2>
+    <p>Open this page in the same browser (and the same way, double-clicked or from the website) you used the old toolkit in. It saves everything the toolkit kept in this browser to one file; then choose <b>File › Import browser data…</b> in any of the Dune desktop apps.</p>
+    <p id="found" class="hint"></p>
+    <button class="btn primary" id="go">Save dune-gm-browser-data.json</button>
+  </main>
+  <script>
+    const data = {};
+    for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (/^duneGM\./.test(k)) data[k] = localStorage.getItem(k); }
+    document.getElementById("found").textContent = Object.keys(data).length ? "Found: " + Object.keys(data).join(", ") : "Nothing from the toolkit is stored in this browser.";
+    document.getElementById("go").onclick = () => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), localStorage: data }, null, 1)], { type: "application/json" }));
+      a.download = "dune-gm-browser-data.json"; document.body.appendChild(a); a.click(); a.remove();
+    };
+  </script>
+</body>
+</html>

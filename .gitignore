@@ -18,3 +18,7 @@ img/local/
 
 # style reference images (stock, licensed): local only
 \[images\]/
+
+# desktop build
+node_modules/
+desktop/dist/

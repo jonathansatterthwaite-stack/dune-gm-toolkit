@@ -764,3 +764,11 @@ html.cg-fit .cg-emblem { width: clamp(120px, calc(var(--h) * 0.2), 190px); heigh
   .tl-step { display: none; }
   .tl-form .tl-grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ---------- the three tools: header tool switcher ---------- */
+.toolswitch { display: flex; gap: 0; border: 1px solid var(--line, var(--border)); border-radius: 3px; overflow: hidden; }
+.tool-btn { border: 0; border-right: 1px solid var(--line, var(--border)); background: transparent; color: var(--muted); padding: 0.4rem 0.9rem; cursor: pointer; font-family: var(--serif); font-variant: small-caps; letter-spacing: 0.05em; font-size: 0.98rem; }
+.tool-btn:last-child { border-right: 0; }
+.tool-btn:hover { color: var(--gold, var(--accent)); }
+.tool-btn.on { background: var(--gold, var(--accent)); color: var(--on-accent, #fff); cursor: default; }
+.tabs-hidden { display: none; }

@@ -2,118 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dune GM Toolkit</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%2213%22 fill=%22%23c38c4f%22/%3E%3Cpath d=%22M5 19c6-3 16-3 22 0%22 stroke=%22%237a4a24%22 stroke-width=%222.5%22 fill=%22none%22/%3E%3C/svg%3E" />
-  <script>try { var t = localStorage.getItem("duneGM.theme"); if (t === "light") document.documentElement.dataset.theme = "light"; } catch (e) {}</script>
-  <link rel="stylesheet" href="css/styles.css?v=24" />
-  <link rel="stylesheet" href="css/imperial.css?v=3" />
-  <meta name="theme-color" content="#141116" />
+  <title>Dune tools</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/imperial.css" />
+  <style>main { max-width: 760px; margin: 3rem auto; } .links { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; } .links a { display: block; text-decoration: none; }</style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <span class="brand-mark" aria-hidden="true">◈</span>
-      <div>
-        <div class="brand-title">Dune GM Toolkit</div>
-        <div class="brand-sub" id="sessionInfo"></div>
+  <main>
+    <div class="card">
+      <h2>Dune tools</h2>
+      <p>The toolkit is now three desktop apps: build them with <code>npm run build</code> (see the README). For development you can also open each one here in the browser; they share their data through this browser's storage.</p>
+      <div class="links">
+        <a class="card" href="character.html"><h3>Character maker</h3><p class="small">Guided creator, character editor and list.</p></a>
+        <a class="card" href="lore.html"><h3>Lore</h3><p class="small">Compendium, Timeline, Galaxy map, Worlds, House.</p></a>
+        <a class="card" href="gm.html"><h3>GM tools</h3><p class="small">Dice, Conflict, NPCs, Scene, Hooks, Reference.</p></a>
       </div>
+      <p class="hint">Data from the old single-page toolkit? Open <a href="export-browser-data.html">export-browser-data.html</a> in the browser you used, save the file, then use <b>File › Import browser data…</b> in any of the desktop apps.</p>
     </div>
-
-    <div class="pools">
-      <div class="pool pool-threat" title="GM Threat pool (no maximum)">
-        <div class="pool-label">Threat</div>
-        <div class="pool-row">
-          <button class="pool-btn" data-act="pool" data-k="threat" data-d="-1" aria-label="Spend 1 Threat">−</button>
-          <div class="pool-value" id="threatValue">0</div>
-          <button class="pool-btn" data-act="pool" data-k="threat" data-d="1" aria-label="Add 1 Threat">+</button>
-        </div>
-      </div>
-      <div class="pool pool-momentum" title="Group Momentum pool (max 6)">
-        <div class="pool-label">Momentum <span class="pool-cap">/ 6</span></div>
-        <div class="pool-row">
-          <button class="pool-btn" data-act="pool" data-k="momentum" data-d="-1" aria-label="Spend 1 Momentum">−</button>
-          <div class="pool-value" id="momentumValue">0</div>
-          <button class="pool-btn" data-act="pool" data-k="momentum" data-d="1" aria-label="Add 1 Momentum">+</button>
-        </div>
-        <div class="pips" id="momentumPips"></div>
-      </div>
-    </div>
-
-    <div class="top-actions">
-      <button class="btn ghost" data-act="theme" id="themeBtn" title="Switch between the Imperial (dark) and Parchment (light) themes">Parchment</button>
-      <button class="btn ghost" data-act="undo" id="undoBtn" title="Undo last pool change">↶ Undo</button>
-      <button class="btn" data-act="endScene" title="End scene: lose 1 Momentum, reset Resist Defeat">End scene</button>
-      <button class="btn primary" data-act="openSession">New session</button>
-    </div>
-  </header>
-
-  <nav class="tabs" id="tabs">
-    <button data-tab="roller">Dice</button>
-    <button data-tab="conflict">Conflict</button>
-    <button data-tab="npcs">NPCs</button>
-    <button data-tab="characters">Characters</button>
-    <button data-tab="scene">Scene</button>
-    <button data-tab="house">House</button>
-    <button data-tab="worlds">Worlds</button>
-    <button data-tab="starmap">Galaxy map</button>
-    <button data-tab="hooks">Hooks</button>
-    <button data-tab="timeline">Timeline</button>
-    <button data-tab="compendium">Compendium</button>
-    <button data-tab="reference">Reference</button>
-  </nav>
-
-  <main id="main"></main>
-
-  <div class="toasts" id="toasts" aria-live="polite"></div>
-
-  <dialog id="sessionDialog">
-    <form method="dialog" class="dialog-body">
-      <h2>Start a session</h2>
-      <p class="muted">Starting Threat depends on the players' House (Core p.86).</p>
-      <label class="field">Players
-        <input type="number" id="sessPlayers" min="1" max="10" value="4" />
-      </label>
-      <label class="field">House type
-        <select id="sessHouse"></select>
-      </label>
-      <label class="check"><input type="checkbox" id="sessClearMomentum" /> Empty the Momentum pool</label>
-      <label class="check"><input type="checkbox" id="sessClearLog" /> Clear the roll log</label>
-      <div class="dialog-preview" id="sessPreview"></div>
-      <div class="dialog-actions">
-        <button value="cancel" class="btn ghost">Cancel</button>
-        <button value="ok" class="btn primary" id="sessOk">Set Threat</button>
-      </div>
-    </form>
-  </dialog>
-
-  <script src="js/data.js?v=5"></script>
-  <script src="js/expansions.js?v=5"></script>
-  <script src="js/dice.js?v=4"></script>
-  <script src="js/app.js?v=6"></script>
-  <script src="js/theme.js?v=1"></script>
-  <script src="js/house.js?v=4"></script>
-  <script src="js/characters-data.js?v=4"></script>
-  <script src="js/characters.js?v=7"></script>
-  <script src="js/chargen.js?v=10"></script>
-  <script src="js/worlds.js?v=4"></script>
-  <script src="js/vendor/three.min.js?v=187"></script>
-  <script src="js/planets.js?v=6"></script>
-  <script src="js/galaxy-data.js?v=2"></script>
-  <script src="js/galaxy.js?v=11"></script>
-  <script src="js/db.js?v=7"></script>
-  <script src="js/db/rules.js?v=3"></script>
-  <script src="js/db/assets-core.js?v=2"></script>
-  <script src="js/db/assets-x.js?v=2"></script>
-  <script src="js/db/houses.js?v=3"></script>
-  <script src="js/db/npcs-core.js?v=2"></script>
-  <script src="js/db/npcs-x.js?v=2"></script>
-  <script src="js/db/planets.js?v=3"></script>
-  <script src="js/db/adventures.js?v=1"></script>
-  <script src="js/db/timeline.js?v=2"></script>
-  <script src="js/db/lore.js?v=1"></script>
-  <script src="js/compendium.js?v=10"></script>
-  <script src="js/timeline.js?v=4"></script>
-  <script>GM.start();</script>
+  </main>
 </body>
 </html>

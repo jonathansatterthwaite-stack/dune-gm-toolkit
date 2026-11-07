@@ -14,8 +14,8 @@ const fs = require("fs"), path = require("path"), vm = require("vm");
 const ROOT = path.dirname(__dirname);
 const verbose = process.argv.includes("--verbose");
 
-// the data scripts index.html loads, in its order (never the *.local.js personal files)
-const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+// the data scripts the pages load (desktop/template.html), in their order (never the *.local.js personal files)
+const html = fs.readFileSync(path.join(ROOT, "desktop", "template.html"), "utf8");
 const scripts = [...html.matchAll(/<script src="([^"?]+)/g)].map((m) => m[1])
   .filter((s) => /^js\/(data|expansions|characters-data|db)(\.js|\/)/.test(s) && !/\.local\.js$/.test(s));
 const win = { location: { protocol: "https:", hostname: "audit" }, console };

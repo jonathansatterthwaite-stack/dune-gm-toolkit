@@ -1,0 +1,19 @@
+  <dialog id="sessionDialog">
+    <form method="dialog" class="dialog-body">
+      <h2>Start a session</h2>
+      <p class="muted">Starting Threat depends on the players' House (Core p.86).</p>
+      <label class="field">Players
+        <input type="number" id="sessPlayers" min="1" max="10" value="4" />
+      </label>
+      <label class="field">House type
+        <select id="sessHouse"></select>
+      </label>
+      <label class="check"><input type="checkbox" id="sessClearMomentum" /> Empty the Momentum pool</label>
+      <label class="check"><input type="checkbox" id="sessClearLog" /> Clear the roll log</label>
+      <div class="dialog-preview" id="sessPreview"></div>
+      <div class="dialog-actions">
+        <button value="cancel" class="btn ghost">Cancel</button>
+        <button value="ok" class="btn primary" id="sessOk">Set Threat</button>
+      </div>
+    </form>
+  </dialog>
