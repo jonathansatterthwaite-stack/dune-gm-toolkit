@@ -24,6 +24,8 @@ window.DUNE_DB = (function () {
     planets:       { group: "World", title: "Planets", desc: "Worlds of the Imperium: system, ruling House, exports and places of interest.", cols: [["system", "System"], ["house", "House"]], facet: "" },
     organizations: { group: "World", title: "Factions and powers", desc: "The great powers of the Imperium and the factions of Arrakis.", cols: [["kind", "Kind"]], facet: "kind" },
     traits:        { group: "World", title: "Traits", desc: "Traits used in the books — reputations, House traits, conditions and scene traits.", cols: [["kind", "Kind"]], facet: "kind" },
+    // only present when js/db/fulltext.local.js has been generated from your own PDFs (tools/build-fulltext.js)
+    pages:         { group: "Books", title: "Book pages", desc: "Every page of the four books as text, from your own PDFs. Local only — never published.", cols: [["heading", "Starts with"]], facet: "" },
   };
   const ORDER = Object.keys(META);
   const T = {};

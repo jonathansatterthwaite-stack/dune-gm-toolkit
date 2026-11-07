@@ -518,3 +518,7 @@ body.gx-open { overflow: hidden; }
   .db-group { display: none; }
   .db-tab { width: auto; border: 1px solid var(--border); border-radius: 999px; padding: 0.2rem 0.6rem; font-size: 0.82rem; }
 }
+.db-fulltext { max-height: 60vh; overflow-y: auto; border-left: 3px solid var(--accent); padding: 0.1rem 0.4rem 0.1rem 0.8rem; font-family: var(--serif); font-size: 0.95rem; line-height: 1.45; }
+.db-fulltext p { margin: 0 0 0.6rem; }
+.db-page { max-height: none; }
+.db-deep { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; margin: 0.6rem 0 0; }

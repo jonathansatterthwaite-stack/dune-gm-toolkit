@@ -6,7 +6,7 @@
   const BOOKS = ["Core", "Power and Pawns", "Sand and Dust", "The Great Game", "Homebrew"];
   const BOOK_TAG = { Core: "Core", "Power and Pawns": "P&P", "Sand and Dust": "S&D", "The Great Game": "GG", Homebrew: "Brew", Other: "—" };
 
-  G.ensure("db", { table: "assets", q: "", book: "", facet: "", sel: "", custom: {}, draft: null, limit: 200 });
+  G.ensure("db", { table: "assets", q: "", book: "", facet: "", sel: "", custom: {}, draft: null, limit: 200, deep: false });
   const ST = () => G.S.db;
   const R = () => { G.save(); G.render(); };
 
@@ -23,6 +23,21 @@
   };
   const meta = (t) => DB.META[t] || { group: "Homebrew", title: t, desc: "", cols: [], facet: "" };
 
+  // ---- full book text: js/db/fulltext.local.js, generated from your own PDFs by tools/build-fulltext.js.
+  // Loaded only when the toolkit runs from your computer (file:// or localhost), never on the public site.
+  const LOCAL = location.protocol === "file:" || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  let fullState = window.DUNE_FULLTEXT ? "ready" : LOCAL ? "loading" : "off";
+  if (fullState === "loading") {
+    const s = document.createElement("script");
+    s.src = "js/db/fulltext.local.js?t=" + Date.now();
+    s.onload = () => { fullState = window.DUNE_FULLTEXT ? "ready" : "missing"; if (G.S.tab === "compendium") G.render(); };
+    s.onerror = () => { fullState = "missing"; if (G.S.tab === "compendium") G.render(); };
+    document.head.appendChild(s);
+  }
+  const FT = () => (window.DUNE_FULLTEXT && window.DUNE_FULLTEXT.entries) || {};
+  const pageRow = (book, page) => rowsOf("pages").find((p) => p.bookKey === book && p.page === page) || null;
+  const bookHTML = (text) => text.split(/\n{2,}/).map((p) => `<p>${esc(p).replace(/\n/g, "<br/>")}</p>`).join("");
+
   function filtered() {
     const s = ST(), q = s.q.trim();
     let list;
@@ -30,7 +45,7 @@
       const terms = q.toLowerCase().split(/\s+/);
       const pool = (s.table === "*" ? allTables() : [s.table]).flatMap(rowsOf);
       list = pool.map((r) => {
-        const n = r.name.toLowerCase(), all = DB.text(r);
+        const n = r.name.toLowerCase(), ft = s.deep && FT()[r.id], all = DB.text(r) + (ft && ft.text ? " " + ft.text.toLowerCase() : "");
         if (!terms.every((t) => all.includes(t))) return null;
         return [r, terms.every((t) => n.includes(t)) ? (n.startsWith(terms[0]) ? 0 : 1) : 2];
       }).filter(Boolean).sort((a, b) => a[1] - b[1] || a[0].name.localeCompare(b[0].name)).map((x) => x[0]);
@@ -118,8 +133,32 @@
     return `<div class="c-actions">${out.join("")}</div>`;
   }
 
+  // "From the book": the entry's own section, or its whole page when the section couldn't be isolated
+  function bookSection(r) {
+    const e = FT()[r.id]; if (!e) return "";
+    const pg = pageRow(e.book, e.page);
+    const text = e.how === "section" ? e.text : pg ? pg.text : "";
+    if (!text) return "";
+    return `<h4>From the book</h4>
+      <div class="db-fulltext">${bookHTML(text)}</div>
+      <p class="pg">${e.how === "section" ? "The book's text for this entry" : "This entry couldn't be isolated, so this is its whole page"} — ${esc(pg ? pg.name : "")}.
+      ${pg ? `<a class="db-link" data-act="dbGo" data-id="${esc(pg.id)}">Open the page</a>` : ""}</p>`;
+  }
+  function pageDetail(r) {
+    const sib = rowsOf("pages").filter((p) => p.bookKey === r.bookKey);
+    const i = sib.findIndex((p) => p.id === r.id), prev = sib[i - 1], next = sib[i + 1];
+    const here = Object.entries(FT()).filter(([, e]) => e.book === r.bookKey && e.page === r.page && e.page > 0).map(([id]) => getRow(id)).filter(Boolean);
+    return `<div class="card-head"><div><h2>${esc(r.name)}</h2><div class="muted small">Book page · PDF page ${r.pdfPage}</div></div>${tag(r)}</div>
+      <div class="c-actions">${prev ? `<button class="btn small" data-act="dbGo" data-id="${esc(prev.id)}">◀ ${esc(prev.name.replace(/^.* (p\.|PDF page )/, "$1"))}</button>` : ""}${next ? `<button class="btn small" data-act="dbGo" data-id="${esc(next.id)}">${esc(next.name.replace(/^.* (p\.|PDF page )/, "$1"))} ▶</button>` : ""}</div>
+      ${here.length ? `<h4>Entries on this page</h4><p>${here.map((x) => link(x._t, x.name)).join(", ")}</p>` : ""}
+      <div class="db-fulltext db-page">${bookHTML(r.text)}</div>
+      <p class="pg">From your PDF of ${esc(r.src.replace(/ (p\.|PDF page ).*$/, ""))}. Personal use — this text is only loaded on your own computer.</p>
+      <div class="c-actions"><button class="btn" data-act="dbCopy" data-id="${esc(r.id)}">Copy page text</button></div>`;
+  }
+
   function detailHTML(r) {
     if (!r) return `<div class="hint">Pick an entry to see it here.</div>`;
+    if (r._t === "pages") return pageDetail(r);
     const t = r._t, m = meta(t);
     let body = "";
     if (t === "npcs") body = npcBlock(r);
@@ -142,7 +181,8 @@
     return `<div class="card-head"><div><h2>${esc(r.name)}</h2><div class="muted small">${esc(m.title)}${r.title ? ` · ${esc(r.title)}` : ""}${r.kind && t === "npcs" ? ` · ${esc(r.kind)}` : ""}</div></div>${tag(r)}</div>
       ${r.text ? `<p>${esc(r.text)}</p>` : ""}
       ${body}${extra}
-      <p class="pg">Source: ${esc(r.src || "—")}${r.book && r.book !== "Homebrew" ? " — summary written for this tool; see the book for the full text." : ""}</p>
+      <p class="pg">Source: ${esc(r.src || "—")}${r.book && r.book !== "Homebrew" && !FT()[r.id] ? " — summary written for this tool; see the book for the full text." : ""}</p>
+      ${bookSection(r)}
       ${actionsFor(r)}`;
   }
 
@@ -184,6 +224,9 @@
         <input type="search" class="db-search" placeholder="Search everything…" data-bind="db.q" data-live="1" value="${esc(s.q)}" aria-label="Search the database"/>
         <button class="db-tab ${s.table === "*" ? "on" : ""}" data-act="dbTable" data-t="*">All tables <span>${total}</span></button>
         ${Object.entries(groups).map(([g, ts]) => `<div class="db-group">${esc(g)}</div>${ts.map((t) => `<button class="db-tab ${s.table === t ? "on" : ""}" data-act="dbTable" data-t="${t}">${esc(meta(t).title)} <span>${rowsOf(t).length}</span></button>`).join("")}`).join("")}
+        ${fullState === "ready" ? `<label class="db-deep"><input type="checkbox" data-bind="db.deep" ${s.deep ? "checked" : ""}/> Search the book text too</label>`
+          : fullState === "missing" ? `<p class="hint small">For the books' full text, run <code>node tools/build-fulltext.js</code> once (it reads your PDFs in [rulebooks]/), then reload.</p>`
+          : fullState === "loading" ? `<p class="hint small">Loading the books' text…</p>` : ""}
         <label class="field" style="margin-top:0.8rem">Book<select data-bind="db.book"><option value="">All books</option>${BOOKS.map((b) => `<option ${s.book === b ? "selected" : ""}>${b}</option>`).join("")}</select></label>
         <div class="db-io">
           <button class="btn small" data-act="dbExport">Export JSON</button>
@@ -226,8 +269,13 @@
       notes: [n.text, n.assets && n.assets.length ? "Assets: " + n.assets.join(", ") : "", "Source: " + n.src].filter(Boolean).join("\n") };
   }
   const textOf = (r) => {
+    if (r._t === "pages") return `${r.name}
+
+${r.text}`;
     const lines = [`${r.name} (${meta(r._t).title}, ${r.src})`];
     if (r.text) lines.push(r.text);
+    const ft = FT()[r.id], pg = ft && pageRow(ft.book, ft.page);
+    if (ft && (ft.text || pg)) lines.push("", "From the book:", ft.how === "section" ? ft.text : pg.text);
     Object.entries(r).forEach(([k, v]) => {
       if (["id", "name", "text", "src", "book", "_t", "_custom"].includes(k) || v == null || v === "") return;
       lines.push(`${k}: ${typeof v === "object" ? (Array.isArray(v) ? v.map((x) => (typeof x === "object" ? Object.values(x).join(" ") : x)).join(", ") : Object.entries(v).map(([a, b]) => `${a} ${Array.isArray(b) ? b.join("/") : b}`).join(", ")) : v}`);
