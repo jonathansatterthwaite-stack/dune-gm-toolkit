@@ -7,7 +7,7 @@
 (function () {
   const G = window.GM, DB = window.DUNE_DB, TL = window.DUNE_TIMELINE;
   const { esc, uid } = G;
-  G.ensure("timeline", { now: { branch: "novels", year: "" }, view: "novels", branches: [], events: [], form: null, newBranch: { name: "", parent: "", year: "" } });
+  G.ensure("timeline", { now: { branch: "novels", year: "" }, view: "novels", branches: [], events: [], form: null, newBranch: { name: "", parent: "", year: "" }, sel: null, center: "", follow: true });
   const T = () => G.S.timeline;
 
   // ---------------- engine ----------------
@@ -61,7 +61,7 @@
   }
   const describeChange = (c) => { const t = resolve(c.ref); const label = t ? t.name : c.ref.slice(c.ref.indexOf(":") + 1);
     return { t, html: `${t ? `<a class="db-link" data-act="tlOpen" data-id="${esc(t.id)}">${esc(label)}</a>` : esc(label)}: <b>${esc(c.field)}</b> → ${c.value === "" ? "<i>none</i>" : esc(c.value)}` }; };
-  G.timeline = { branches, branchOf, visible, asOf, eventsFor, yearText, eraOf, nowSet, describeChange, now: () => T().now };
+  G.timeline = { branches, branchOf, visible, asOf, eventsFor, yearText, eraOf, nowSet, describeChange, now: () => T().now, stateAt: (b, y) => stateAt(b, y) };
 
   // ---------------- view ----------------
   const editable = (b) => b && b.custom;
@@ -103,91 +103,231 @@
       <div class="c-actions"><button class="btn primary" data-act="tlSave">${f.editId ? "Save changes" : "Add event"}</button><button class="btn ghost" data-act="tlCancel">Cancel</button></div>
     </div>`;
   }
-  function eventCard(e, viewing) {
+  // ---------------- the horizontal strip ----------------
+  // Every year with an event (and every era edge and fork) is a stop on the axis. The space between two stops
+  // grows with the log of the years between them, so 10191 and 10193 sit side by side while Leto II's
+  // 3,500 years stay one stretch. The year under the center line drives the Compendium and the panel below.
+  const GAP = (g) => 86 + 46 * Math.log10(1 + Math.abs(g));
+  let scale = { stops: [], width: 0 };
+  function buildScale(years) {
+    const ys = Array.from(new Set(years.map(Number).filter((y) => !isNaN(y)))).sort((a, b) => a - b);
+    const stops = [];
+    let x = 0;
+    ys.forEach((y, i) => { if (i) x += GAP(y - ys[i - 1]); stops.push({ y, x }); });
+    return { stops, width: x };
+  }
+  function xAt(y) {
+    const s = scale.stops; if (!s.length) return 0;
+    if (y <= s[0].y) return s[0].x;
+    for (let i = 1; i < s.length; i++) if (y <= s[i].y) { const a = s[i - 1], b = s[i]; return a.x + ((b.x - a.x) * (y - a.y)) / (b.y - a.y); }
+    return s[s.length - 1].x;
+  }
+  function yearAtX(x) {
+    const s = scale.stops; if (!s.length) return 0;
+    const near = s.find((p) => Math.abs(p.x - x) <= 4);  // a pixel can span many years in a long gap: snap to a stop
+    if (near) return near.y;
+    if (x <= s[0].x) return s[0].y;
+    for (let i = 1; i < s.length; i++) if (x <= s[i].x) { const a = s[i - 1], b = s[i]; return Math.round(a.y + ((b.y - a.y) * (x - a.x)) / (b.x - a.x)); }
+    return s[s.length - 1].y;
+  }
+  const centerYear = () => { const c = T().center; return c === "" || c == null || isNaN(+c) ? (nowSet() ? +T().now.year : 10190) : +c; };
+
+  // what is in effect at a year: the latest change to each field of each entry, in the viewed timeline
+  const FIELD_LABEL = { house: "Ruling House", vassal: "Held for them by", ruler: "Ruled by", status: "Status", note: "Note", rank: "Rank", homeworld: "Homeworld", habitable: "Habitability" };
+  function stateAt(bid, year) {
+    const lim = key(year, 999), out = {};
+    visible(bid).forEach((e) => {
+      if (key(e.year, e.seq) > lim) return;
+      (e.changes || []).forEach((c) => { const row = resolve(c.ref); if (row) out[row.id + "|" + c.field] = { row, field: c.field, value: c.value, from: row[c.field], e }; });
+    });
+    return Object.values(out).sort((a, b) => a.row.name.localeCompare(b.row.name) || a.field.localeCompare(b.field));
+  }
+
+  function lorePanel(year) {
+    const view = branchOf(T().view) || branchOf("novels"), era = eraOf(year);
+    const thisYear = visible(view.id).filter((e) => +e.year === year);
+    const state = stateAt(view.id, year);
+    const groups = {};
+    state.forEach((s) => (groups[s.row.id] = groups[s.row.id] || { row: s.row, items: [] }).items.push(s));
+    return `<div class="card-head"><h3>The Known Universe in ${esc(yearText(year))}</h3>
+        <button class="btn small ${T().follow ? "primary" : "ghost"}" data-act="tlFollow" aria-pressed="${!!T().follow}" title="When on, the Compendium shows every entry as it stands at the year under the center line">${T().follow ? "Compendium follows this year" : "Compendium shows the books"}</button></div>
+      ${era ? `<p><b>${esc(era.name)}</b> <span class="muted small">${esc(yearText(era.from))} – ${esc(yearText(era.to))} · ${esc(era.src)}</span><br/>${esc(era.text)}</p>` : `<p class="muted">Before the eras of play.</p>`}
+      ${thisYear.length ? `<h4>This year</h4><ul class="tl-thisyear">${thisYear.map((e) => `<li><button class="db-link" data-act="tlSel" data-id="${esc(e.id)}">${esc(e.name)}</button></li>`).join("")}</ul>` : ""}
+      <h4>As things stand</h4>
+      ${state.length ? `<dl class="kv tl-state">${Object.values(groups).map((g) => `<dt><a class="db-link" data-act="tlOpen" data-id="${esc(g.row.id)}">${esc(g.row.name)}</a></dt><dd>${g.items.map((s) =>
+        `${esc(FIELD_LABEL[s.field] || s.field)}: <b>${s.value === "" ? "none" : esc(s.value)}</b> <span class="muted small">since ${esc(yearText(s.e.year, s.e.circa))}</span>`).join("<br/>")}</dd>`).join("")}</dl>`
+        : `<p class="muted small">Nothing has changed from the books yet in this timeline.</p>`}`;
+  }
+
+  function eventDetail(e) {
+    if (!e) return `<div class="card-head"><h3>Events</h3></div><p class="hint">Scroll the timeline left and right, or drag it. Pick a dot to read that event. ◀ ▶ step from event to event.</p>`;
     const b = branchOf(e._from || e.branch);
     const refs = (e.refs || []).map((r) => { const t = resolve(r); return t ? `<a class="db-link" data-act="tlOpen" data-id="${esc(t.id)}">${esc(t.name)}</a>` : esc(r.slice(r.indexOf(":") + 1)); });
     const changes = (e.changes || []).map((c) => `<li>${describeChange(c).html}</li>`).join("");
     const source = e.src && e.src !== "Homebrew" ? esc(e.src) : e.url ? `<a href="${esc(e.url)}" target="_blank" rel="noopener">Dune Wiki${e.canon ? ` (${esc(e.canon === "Original" ? "Frank Herbert's novels" : e.canon)})` : ""} ↗</a>` : e._custom ? "Your event" : "";
-    return `<li class="tl-ev ${e._inherited ? "inherited" : ""} ${e._custom ? "custom" : ""}" id="tl-${esc(e.id)}">
-      <div class="tl-year">${esc(yearText(e.year, e.circa))}</div>
-      <div class="tl-body">
-        <div class="tl-title"><b>${esc(e.name)}</b>${e._inherited ? `<span class="badge">${esc(b ? b.name : "")}</span>` : ""}</div>
-        ${e.text ? `<p>${esc(e.text)}</p>` : ""}
-        ${refs.length ? `<p class="small">Involves ${refs.join(", ")}</p>` : ""}
-        ${changes ? `<ul class="tl-changes">${changes}</ul>` : ""}
-        <div class="tl-actions"><span class="pg">${source}</span>
-          <button class="btn small ghost" data-act="tlNowAt" data-y="${esc(e.year)}" title="View the Compendium as of this year in this timeline">As of this year</button>
-          <button class="btn small ghost" data-act="tlFork" data-id="${esc(e.id)}" title="Start an alternate timeline that splits off after this event">Branch from here</button>
-          ${e._custom ? `<button class="btn small ghost" data-act="tlEdit" data-id="${esc(e.id)}">Edit</button><button class="btn small ghost danger" data-act="tlDel" data-id="${esc(e.id)}">Delete</button>` : ""}
+    return `<div class="card-head"><div><div class="muted small">${esc(yearText(e.year, e.circa))}${b && e._inherited ? ` · from ${esc(b.name)}` : ""}</div><h3>${esc(e.name)}</h3></div></div>
+      ${e.text ? `<p>${esc(e.text)}</p>` : ""}
+      ${refs.length ? `<p class="small">Involves ${refs.join(", ")}</p>` : ""}
+      ${changes ? `<h4>Changes from this date</h4><ul class="tl-changes">${changes}</ul>` : ""}
+      <p class="pg">${source}</p>
+      <div class="c-actions">
+        <button class="btn small" data-act="tlFork" data-id="${esc(e.id)}" title="Start an alternate timeline that splits off right after this event">Branch from here</button>
+        ${e._custom ? `<button class="btn small ghost" data-act="tlEdit" data-id="${esc(e.id)}">Edit</button><button class="btn small ghost danger" data-act="tlDel" data-id="${esc(e.id)}">Delete</button>` : ""}
+      </div>`;
+  }
+
+  function strip(view, evs) {
+    const kids = branches().filter((b) => b.parent === view.id && b.fork);
+    const forkYears = kids.map((k) => k.fork.year).concat(view.fork ? [view.fork.year] : []);
+    scale = buildScale(evs.map((e) => e.year).concat(TL.eras.flatMap((e) => [e.from, e.to]), forkYears));
+    const byYear = {};
+    evs.forEach((e) => (byYear[e.year] = byYear[e.year] || []).push(e));
+    const lanes = Math.max(1, ...Object.values(byYear).map((l) => l.length));
+    const sel = T().sel;
+    const at = (x) => `left:calc(var(--pad) + ${x.toFixed(1)}px)`;
+    const s = scale.stops;
+    const gaps = s.slice(1).map((b, i) => { const a = s[i], g = b.y - a.y; return g >= 150 ? `<div class="tl-gap" style="${at((a.x + b.x) / 2)}">${g.toLocaleString()} years</div>` : ""; }).join("");
+    const ticks = s.map((p) => `<div class="tl-tick" style="${at(p.x)}"><span>${esc(yearText(p.y))}</span></div>`).join("");
+    const eras = TL.eras.map((er, i) => { const x0 = xAt(er.from), x1 = xAt(er.to);
+      return `<div class="tl-band b${i % 2}" style="${at(x0)};width:${Math.max(0, x1 - x0).toFixed(1)}px" title="${esc(er.name)}: ${esc(er.text)}"><span>${esc(er.name)}</span></div>`; }).join("");
+    const forks = kids.map((k) => `<div class="tl-forkline" style="${at(xAt(k.fork.year) + 18)}"><button class="db-link" data-act="tlView" data-b="${esc(k.id)}" title="Switch to ${esc(k.name)}">⑂ ${esc(k.name)}</button></div>`).join("");
+    const dots = Object.entries(byYear).map(([y, list]) => list.map((e, i) =>
+      `<button class="tl-dot ${e._inherited ? "inherited" : ""} ${e._custom ? "custom" : ""} ${e.id === sel ? "on" : ""}" style="${at(xAt(+y))};--lane:${i}" data-act="tlSel" data-id="${esc(e.id)}" title="${esc(yearText(e.year, e.circa))}: ${esc(e.name)}" aria-label="${esc(yearText(e.year, e.circa))}: ${esc(e.name)}"></button>`).join("")).join("");
+    return `<div class="tl-viewport" style="--lanes:${lanes}">
+        <div class="tl-center" aria-hidden="true"><span id="tlCenterYear">${esc(yearText(centerYear()))}</span></div>
+        <button class="tl-step prev" data-act="tlStep" data-dir="-1" aria-label="Previous event">◀</button>
+        <button class="tl-step next" data-act="tlStep" data-dir="1" aria-label="Next event">▶</button>
+        <div class="tl-scroller" id="tlScroller" tabindex="0" aria-label="Timeline: scroll or drag left and right; arrow keys step between events">
+          <div class="tl-track" style="width:calc(var(--pad) * 2 + ${scale.width.toFixed(0)}px)">
+            ${eras}${gaps}<div class="tl-axis"></div>${ticks}${forks}${dots}
+          </div>
         </div>
-      </div></li>`;
+      </div>
+      <div class="tl-eras">${TL.eras.map((er) => `<button class="chip" data-act="tlJump" data-y="${er.from}">${esc(er.name)}</button>`).join("")}<button class="chip" data-act="tlJump" data-y="10190">The RPG's setting (10190 AG)</button></div>`;
   }
 
   G.views.timeline = () => {
     const tl = T(), view = branchOf(tl.view) || branchOf("novels"), evs = visible(view.id);
     const nb = tl.newBranch || (tl.newBranch = { name: "", parent: "", year: "" });
     if (!nb.parent) nb.parent = view.id;
-    // fork markers: timelines that split off this one, placed where they leave it
-    const kids = branches().filter((b) => b.parent === view.id && b.fork);
-    const items = [];
-    let era = null;
-    const marks = kids.map((k) => ({ k, at: key(k.fork.year, k.fork.seq) }));
-    evs.forEach((e) => {
-      const at = key(e.year, e.seq);
-      marks.filter((m) => !m.done && m.at < at).forEach((m) => { m.done = true; items.push(forkMark(m.k)); });
-      const er = eraOf(+e.year);
-      if (er && er !== era) { era = er; items.push(`<li class="tl-era"><b>${esc(er.name)}</b><span class="muted small">${esc(yearText(er.from))} – ${esc(yearText(er.to))} · ${esc(er.text)} <span class="pg">${esc(er.src)}</span></span></li>`); }
-      items.push(eventCard(e, view));
-    });
-    marks.filter((m) => !m.done).forEach((m) => items.push(forkMark(m.k)));
-    const nowB = branchOf(tl.now.branch);
+    const selEv = evs.find((e) => e.id === tl.sel) || null;
     return `<div class="tl-wrap">
-      <div class="card tl-now">
-        <div class="card-head"><h2>Timeline</h2>
-          <div class="mini"><span class="small">Show the Compendium as of</span>
-            ${G.select("timeline.now.branch", branches().map((b) => ({ v: b.id, l: b.name })))}
-            <input type="number" data-bind="timeline.now.year" data-live="1" value="${esc(tl.now.year)}" placeholder="year" style="width:7rem" aria-label="Year (negative for BG)"/><span class="small">AG</span>
-            ${nowSet() ? `<button class="btn small ghost" data-act="tlClearNow">Clear</button>` : ""}</div></div>
-        <p class="hint">${nowSet() ? `The Compendium now shows entries as they stand in <b>${esc(yearText(+tl.now.year))}</b> in <b>${esc(nowB ? nowB.name : "")}</b>, with each changed field marked.` : "Pick a timeline and a year (negative for BG) to see entries as they stand then. With no year set, the Compendium shows the books' own values."}</p>
+      <div class="card tl-stripcard">
+        <div class="card-head"><div>
+            ${editable(view) ? `<input class="c-name" data-bind="timeline.branches.#${esc(view.id)}.name" value="${esc(view.name)}" aria-label="Timeline name"/>` : `<h2>${esc(view.name)}</h2>`}
+            <div class="muted small">${view.fork ? `Splits from ${esc((branchOf(view.parent) || {}).name || "?")} after ${esc(yearText(view.fork.year))}; earlier events are shared` : "The root timeline"} · ${evs.length} events</div></div>
+          <div class="mini">${G.select("timeline.view", branches().map((b) => ({ v: b.id, l: (b.parent ? "↳ " : "") + b.name })))}<button class="btn primary small" data-act="tlNewEvent">Add event</button></div></div>
+        ${strip(view, evs)}
       </div>
-      <div class="tl-cols">
-        <aside class="card tl-tree"><h3>Timelines</h3><ul>${tree("", 0)}</ul>
-          <h4>New timeline</h4>
-          <label class="small">Name <input type="text" data-bind="timeline.newBranch.name" value="${esc(nb.name)}" placeholder="e.g. Our campaign"/></label>
-          <label class="small">Splits from ${G.select("timeline.newBranch.parent", branches().map((b) => ({ v: b.id, l: b.name })))}</label>
-          <label class="small">after the year <input type="number" data-bind="timeline.newBranch.year" value="${esc(nb.year)}" placeholder="10191"/></label>
-          <button class="btn small primary" data-act="tlNewBranch">Create timeline</button>
-          <p class="hint small">Or use “Branch from here” on any event to split off right after it.</p>
-        </aside>
-        <section>
-          <div class="card">
-            <div class="card-head"><div>
-              ${editable(view) ? `<input class="c-name" data-bind="timeline.branches.#${esc(view.id)}.name" value="${esc(view.name)}" aria-label="Timeline name"/>` : `<h2>${esc(view.name)}</h2>`}
-              <div class="muted small">${view.fork ? `Splits from ${esc((branchOf(view.parent) || {}).name || "?")} after ${esc(yearText(view.fork.year))}; earlier events are shared` : "The root timeline"} · ${evs.length} events</div></div>
-              <div class="c-actions"><button class="btn primary" data-act="tlNewEvent">Add event</button>${editable(view) ? `<button class="btn ghost danger" data-act="tlDelBranch">Delete timeline</button>` : ""}</div></div>
-            ${editable(view) ? `<textarea data-bind="timeline.branches.#${esc(view.id)}.text" rows="2" placeholder="What makes this timeline different?">${esc(view.text || "")}</textarea>` : `<p>${esc(view.text || "")}</p>`}
-          </div>
-          ${form()}
-          <ul class="tl-list">${items.join("") || `<li class="empty">No events yet.</li>`}</ul>
-        </section>
+      ${form()}
+      <div class="tl-below">
+        <div class="card tl-detail" id="tlDetail">${eventDetail(selEv)}</div>
+        <div class="card tl-lore" id="tlLore">${lorePanel(centerYear())}</div>
+      </div>
+      <div class="card tl-manage">
+        <div class="tl-manage-cols">
+          <div><h3>Timelines</h3><ul class="tl-treelist">${tree("", 0)}</ul>
+            ${editable(view) ? `<textarea data-bind="timeline.branches.#${esc(view.id)}.text" rows="2" placeholder="What makes ${esc(view.name)} different?">${esc(view.text || "")}</textarea><button class="btn small ghost danger" data-act="tlDelBranch">Delete this timeline</button>` : `<p class="small">${esc(view.text || "")}</p>`}</div>
+          <div><h3>New timeline</h3>
+            <label class="small">Name <input type="text" data-bind="timeline.newBranch.name" value="${esc(nb.name)}" placeholder="e.g. Our campaign"/></label>
+            <label class="small">Splits from ${G.select("timeline.newBranch.parent", branches().map((b) => ({ v: b.id, l: b.name })))}</label>
+            <label class="small">after the year <input type="number" data-bind="timeline.newBranch.year" value="${esc(nb.year)}" placeholder="10191"/></label>
+            <button class="btn small primary" data-act="tlNewBranch">Create timeline</button>
+            <p class="hint small">Or pick an event and use “Branch from here” to split off right after it.</p></div>
+        </div>
       </div>
     </div>`;
   };
-  const forkMark = (k) => `<li class="tl-fork"><span>⑂</span> <button class="db-link" data-act="tlView" data-b="${esc(k.id)}">${esc(k.name)}</button> splits off here</li>`;
+
+  // ---------------- scrolling: the center line sets the year ----------------
+  let saveTimer = 0, lastYear = null;
+  function onCenter(sc, exact) {
+    if (!sc.isConnected) return;  // a strip replaced by a re-render resets to 0 and fires one last scroll: ignore it
+    const y = exact != null ? exact : yearAtX(sc.scrollLeft);
+    if (y === lastYear) return;
+    lastYear = y;
+    T().center = y;
+    const label = document.getElementById("tlCenterYear"); if (label) label.textContent = yearText(y);
+    if (T().follow) T().now = { branch: T().view, year: y };
+    const lore = document.getElementById("tlLore"); if (lore) lore.innerHTML = lorePanel(y);
+    clearTimeout(saveTimer); saveTimer = setTimeout(() => G.save(), 400);
+  }
+  function centerOn(y, smooth) {
+    const sc = document.getElementById("tlScroller"); if (!sc) return;
+    const left = xAt(y);
+    if (smooth && sc.scrollTo) {
+      sc.scrollTo({ left, behavior: "smooth" });
+      setTimeout(() => { if (Math.abs(sc.scrollLeft - left) > 2) sc.scrollLeft = left; lastYear = null; onCenter(sc, y); }, 450);  // land on the exact year, even if frames stall
+    } else { sc.scrollLeft = left; lastYear = null; onCenter(sc, y); }
+  }
+  G.afterRender.push((tab) => {
+    if (tab !== "timeline") return;
+    const sc = document.getElementById("tlScroller"); if (!sc) return;
+    sc.style.setProperty("--pad", Math.round(sc.clientWidth / 2) + "px");
+    lastYear = null;
+    const y0 = centerYear();
+    sc.scrollLeft = xAt(y0);
+    onCenter(sc, y0);  // keep the saved year exactly, whatever pixel it rounds to
+    let restoring = true; setTimeout(() => (restoring = false), 60);
+    sc.addEventListener("scroll", () => { if (!restoring) onCenter(sc); }, { passive: true });
+    // the mouse wheel scrolls sideways; at either end it hands back to the page
+    sc.addEventListener("wheel", (e) => {
+      if (e.ctrlKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+      const max = sc.scrollWidth - sc.clientWidth, dy = e.deltaY * (e.deltaMode === 1 ? 40 : e.deltaMode === 2 ? sc.clientWidth : 1);
+      if ((dy < 0 && sc.scrollLeft <= 0) || (dy > 0 && sc.scrollLeft >= max - 1)) return;
+      e.preventDefault(); sc.scrollLeft += dy;
+    }, { passive: false });
+    // drag to pan (but a click on a dot still selects it)
+    let drag = null;
+    sc.addEventListener("pointerdown", (e) => { if (e.button !== 0 || e.target.closest("button")) return; drag = { x: e.clientX, left: sc.scrollLeft, id: e.pointerId }; sc.setPointerCapture(e.pointerId); sc.classList.add("dragging"); });
+    sc.addEventListener("pointermove", (e) => { if (drag && e.pointerId === drag.id) sc.scrollLeft = drag.left - (e.clientX - drag.x); });
+    const end = (e) => { if (drag && e.pointerId === drag.id) { drag = null; sc.classList.remove("dragging"); } };
+    sc.addEventListener("pointerup", end); sc.addEventListener("pointercancel", end);
+    sc.addEventListener("keydown", (e) => { if (e.key === "ArrowRight" || e.key === "ArrowLeft") { e.preventDefault(); step(e.key === "ArrowRight" ? 1 : -1); } });
+  });
+  window.addEventListener("resize", () => { if (G.S.tab === "timeline") G.render(); });
+
+  // select an event without rebuilding the page: mark its dot, show it, glide it to the center
+  function select(id, glide) {
+    const e = visible(T().view).find((x) => x.id === id) || null;
+    T().sel = e ? e.id : null;
+    document.querySelectorAll(".tl-dot.on").forEach((d) => d.classList.remove("on"));
+    const dot = document.querySelector(`.tl-dot[data-id="${CSS.escape(id)}"]`); if (dot) dot.classList.add("on");
+    const box = document.getElementById("tlDetail"); if (box) box.innerHTML = eventDetail(e);
+    if (e && glide !== false) centerOn(+e.year, true);
+    G.save();
+  }
+  function step(dir) {
+    const evs = visible(T().view); if (!evs.length) return;
+    const cur = evs.findIndex((e) => e.id === T().sel), y = centerYear();
+    let i;
+    if (cur >= 0 && +evs[cur].year === y) i = cur + dir;
+    else if (dir > 0) i = evs.findIndex((e) => +e.year > y);
+    else { i = -1; evs.forEach((e, k) => { if (+e.year < y) i = k; }); }
+    if (i < 0 || i >= evs.length) return;
+    select(evs[i].id);
+  }
+
+  // switching timelines from the dropdown: drop the selection, and keep the Compendium on the same timeline
+  G.onChange.push((path) => { if (path === "timeline.view") { T().sel = null; T().form = null; if (T().follow && nowSet()) T().now.branch = T().view; } });
 
   // ---------------- actions ----------------
   const A = G.actions;
   const R = () => { G.save(); G.render(); };
   const findEvent = (id) => allEvents().find((e) => e.id === id) || null;
-  A.tlView = (el) => { T().view = el.dataset.b; T().form = null; R(); };
+  A.tlView = (el) => { T().view = el.dataset.b; T().form = null; T().sel = null; if (T().follow && nowSet()) T().now.branch = T().view; R(); };
+  A.tlSel = (el) => { if (G.S.tab !== "timeline") return; select(el.dataset.id); };
+  A.tlStep = (el) => step(+el.dataset.dir);
+  A.tlJump = (el) => centerOn(+el.dataset.y, true);
+  A.tlFollow = () => { T().follow = !T().follow; T().now = T().follow ? { branch: T().view, year: centerYear() } : { branch: T().view, year: "" }; R(); };
   A.tlOpen = (el) => { G.S.tab = "compendium"; A.dbGo(el); window.scrollTo(0, 0); };
-  A.tlNowAt = (el) => { T().now = { branch: T().view, year: +el.dataset.y }; G.toast(`Compendium set to ${yearText(+el.dataset.y)}`); R(); };
-  A.tlClearNow = () => { T().now.year = ""; R(); };
+  A.tlClearNow = () => { T().now.year = ""; T().follow = false; R(); };
   A.tlFork = (el) => {
     const e = findEvent(el.dataset.id); if (!e) return;
     const parent = branchOf(T().view);
     const b = { id: "b" + uid(), name: `${parent.name}: after ${e.name}`, parent: parent.id, fork: { year: +e.year, seq: e.seq == null ? 50 : +e.seq }, text: "" };
-    T().branches.push(b); T().view = b.id; T().form = null;
+    T().branches.push(b); T().view = b.id; T().form = null; T().sel = null; T().center = +e.year;
+    if (T().follow) T().now = { branch: b.id, year: +e.year };
     G.toast("New timeline: rename it and add what happens differently"); R();
   };
   A.tlNewBranch = () => {
@@ -208,7 +348,7 @@
     if (T().now.branch === b.id) T().now = { branch: b.parent, year: T().now.year };
     T().view = b.parent; R();
   };
-  A.tlNewEvent = () => { T().form = { year: nowSet() ? +T().now.year : "", seq: 50, circa: false, name: "", text: "", table: "npcs", entry: "", field: "status", value: "", refs: [], changes: [] }; R(); };
+  A.tlNewEvent = () => { T().form = { year: centerYear(), seq: 50, circa: false, name: "", text: "", table: "npcs", entry: "", field: "status", value: "", refs: [], changes: [] }; R(); };
   A.tlCancel = () => { T().form = null; R(); };
   const pickRef = () => { const f = T().form; const t = DB.find(f.table, f.entry); if (!t) { G.toast(`No ${((DB.META[f.table] || {}).title || f.table).toLowerCase()} entry called “${f.entry}”`); return null; } return `${f.table}:${t.name}`; };
   A.tlAddRef = () => { const ref = pickRef(); if (!ref) return; const f = T().form; if (!f.refs.includes(ref)) f.refs.push(ref); f.entry = ""; R(); };
@@ -226,5 +366,5 @@
   A.tlEdit = (el) => { const e = T().events.find((x) => x.id === el.dataset.id); if (!e) return; T().form = Object.assign({ table: "npcs", entry: "", field: "status", value: "" }, JSON.parse(JSON.stringify(e)), { editId: e.id }); R(); window.scrollTo(0, 0); };
   A.tlDel = (el) => { const e = T().events.find((x) => x.id === el.dataset.id); if (!e || !confirm(`Delete the event "${e.name}"?`)) return; T().events = T().events.filter((x) => x !== e); R(); };
   // from the Compendium: jump to an event in its timeline
-  A.tlGoEvent = (el) => { const e = findEvent(el.dataset.id); if (!e) return; G.S.tab = "timeline"; T().view = e.branch; R(); setTimeout(() => { const n = document.getElementById("tl-" + e.id); if (n) n.scrollIntoView({ block: "center" }); }, 30); };
+  A.tlGoEvent = (el) => { const e = findEvent(el.dataset.id); if (!e) return; G.S.tab = "timeline"; T().view = e.branch; T().sel = e.id; T().center = +e.year; if (T().follow) T().now = { branch: e.branch, year: +e.year }; R(); window.scrollTo(0, 0); };
 })();

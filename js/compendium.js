@@ -318,7 +318,10 @@
     const rows = filtered();
     const facetVals = m.facet ? Array.from(new Set(rowsOf(s.table).map((r) => String(r[m.facet] || "")).filter(Boolean))).sort() : [];
     const shown = rows.slice(0, s.limit);
-    const colsHTML = (r) => (s.table === "*" ? `<span class="muted small">${esc(meta(r._t).title)}</span>` : m.cols.map(([k]) => `<span class="muted small">${esc(Array.isArray(r[k]) ? r[k].join(", ") : r[k] ?? "")}</span>`).join(""));
+    // list columns follow the timeline's year too (a changed value is marked)
+    const colsHTML = (r0) => { if (s.table === "*") return `<span class="muted small">${esc(meta(r0._t).title)}</span>`;
+      const r = G.timeline ? G.timeline.asOf(r0) : r0;
+      return m.cols.map(([k]) => `<span class="muted small${r._changes && r._changes[k] ? " tl-changed" : ""}">${esc(Array.isArray(r[k]) ? r[k].join(", ") : r[k] ?? "")}</span>`).join(""); };
     const listCard = `<section class="card db-list">
         <div class="card-head"><div><h2>${esc(m.title)}</h2><div class="muted small">${esc(m.desc)}</div></div>
           ${s.table !== "*" ? `<button class="btn small" data-act="dbNew">+ Homebrew</button>` : ""}</div>

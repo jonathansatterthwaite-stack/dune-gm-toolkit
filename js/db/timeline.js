@@ -54,7 +54,7 @@
     { seq: 10, refs: ["houses:House Atreides", "houses:House Harkonnen", "planets:Caladan"], changes: [set("planets:Arrakis", "house", "House Atreides")] });
   ev(10191, "The Harkonnen attack on Arrakeen", "House Harkonnen, aided by Sardaukar, attacks the Atreides. Duke Leto, Dr. Yueh and Piter de Vries die, and Rabban is handed the fief of Arrakis.",
     { seq: 20, refs: ["houses:House Harkonnen", "houses:House Atreides", "organizations:Sardaukar"],
-      changes: [dead("Duke Leto Atreides"), dead("Dr. Wellington Yueh"), dead("Piter de Vries"), set("planets:Arrakis", "house", "House Harkonnen"), set("planets:Arrakis", "vassal", "")] });
+      changes: [dead("Duke Leto Atreides"), dead("Dr. Wellington Yueh"), dead("Piter de Vries"), set("planets:Arrakis", "house", "House Harkonnen")] });
   ev(10191, "Paul and Jessica flee to the Fremen", "Duncan Idaho dies covering their escape. Paul becomes Muad'Dib among the Fremen, and Liet Kynes is killed.",
     { seq: 30, refs: ["npcs:Paul Atreides", "npcs:Lady Jessica", "organizations:Fremen"], changes: [dead("Duncan Idaho"), dead("Liet Kynes"), set("npcs:Paul Atreides", "status", "In hiding with the Fremen")] });
   ev(10193, "The Battle of Arrakeen", "Paul's Fremen defeat the Emperor's Sardaukar. Thufir Hawat, Rabban and the Baron die, and Paul kills Feyd-Rautha in single combat. Paul retakes Arrakis and claims the throne through marriage to Irulan; Stilgar becomes governor of Arrakis.",
