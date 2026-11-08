@@ -7,7 +7,7 @@
 (function () {
   const G = window.GM, DB = window.DUNE_DB, TL = window.DUNE_TIMELINE;
   const { esc, uid } = G;
-  G.ensure("timeline", { now: { branch: "novels", year: "" }, view: "novels", branches: [], events: [], form: null, newBranch: { name: "", parent: "", year: "" }, sel: null, center: "", follow: true, campaign: { branch: "", year: "" }, side: { year: true, info: true } });
+  G.ensure("timeline", { now: { branch: "novels", year: "" }, view: "novels", branches: [], events: [], form: null, newBranch: { name: "", parent: "", year: "" }, sel: null, center: "", follow: true, campaign: { branch: "", year: "" }, side: { year: true, info: true, key: false }, hideKinds: [] });
   const T = () => G.S.timeline;
 
   // ---------------- engine ----------------
@@ -64,7 +64,61 @@
   // the players' year: the player display never shows an event after it (default: the RPG's setting, 10190 AG)
   const campaign = () => { const c = T().campaign || {}, set = String(c.year == null ? "" : c.year).trim() !== "" && !isNaN(+c.year);
     return { branch: branchOf(c.branch) ? c.branch : "novels", year: set ? +c.year : 10190, set }; };
-  G.timeline = { campaign, branches, branchOf, visible, asOf, eventsFor, yearText, eraOf, nowSet, describeChange, now: () => T().now, stateAt: (b, y) => stateAt(b, y) };
+
+  // ---------------- kinds of event: each has its own symbol on the timeline ----------------
+  // Built-in events say their kind (js/db/timeline.js). Yours can pick one; left on Automatic, the kind is guessed
+  // from the title, the details and what the event links to or changes.
+  const KINDS = [
+    { id: "birth", name: "Birth", text: "A character is born",
+      svg: '<path d="M8 .8l1.7 5.5L15.2 8l-5.5 1.7L8 15.2l-1.7-5.5L.8 8l5.5-1.7z"/>' },
+    { id: "death", name: "Death", text: "A character dies, is killed or assassinated",
+      svg: '<path d="M6.8 1h2.4v3.6h3.6V7H9.2v8H6.8V7H3.2V4.6h3.6z"/>' },
+    { id: "character", name: "Character", text: "A turning point in someone's life: an exile, a flight, a vow, a disappearance",
+      svg: '<circle cx="8" cy="4.6" r="3"/><path d="M2.4 15c0-3.5 2.4-6 5.6-6s5.6 2.5 5.6 6z"/>' },
+    { id: "house", name: "House", text: "A Great or Minor House: a fief granted or lost, an alliance, a feud, a marriage",
+      svg: '<path d="M8 .9l6 2.3v4.6c0 3.7-2.6 6.2-6 7.4-3.4-1.2-6-3.7-6-7.4V3.2z"/>' },
+    { id: "rule", name: "Throne", text: "Rule and succession: an emperor crowned, a throne taken, an abdication",
+      svg: '<path d="M1.5 4.5l3.7 3.3L8 2.2l2.8 5.6 3.7-3.3-1.2 8.3H2.7z"/><rect x="2.7" y="13.2" width="10.6" height="1.8"/>' },
+    { id: "planet", name: "World", text: "A planet changes: settled, conquered, ruined, terraformed",
+      svg: '<circle cx="8" cy="8" r="3.9"/><ellipse cx="8" cy="8" rx="7.1" ry="2.3" fill="none" stroke="currentColor" stroke-width="1.3" transform="rotate(-24 8 8)"/>' },
+    { id: "battle", name: "War", text: "A battle, an attack, a war or a conquest",
+      svg: '<g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2.5 2.5l10 10M13.5 2.5l-10 10M10 13.4l3.4-3.4M2.6 10l3.4 3.4"/></g>' },
+    { id: "intrigue", name: "Intrigue", text: "A scheme, a plot, a betrayal, a secret",
+      svg: '<path d="M.6 8C2.6 4.5 5 2.8 8 2.8s5.4 1.7 7.4 5.2C13.4 11.5 11 13.2 8 13.2S2.6 11.5.6 8z"/><circle class="hole" cx="8" cy="8" r="2.4"/>' },
+    { id: "founding", name: "Founding", text: "An order, school, guild or institution is founded",
+      svg: '<path d="M8 .9l7 3.9H1z"/><rect x="2.2" y="5.8" width="2.4" height="6.6"/><rect x="6.8" y="5.8" width="2.4" height="6.6"/><rect x="11.4" y="5.8" width="2.4" height="6.6"/><rect x="1" y="13.3" width="14" height="1.9"/>' },
+    { id: "discovery", name: "Discovery", text: "A discovery or new technology: a machine, a voyage, a find",
+      svg: '<circle cx="8" cy="8" r="6.3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 2.9l1.9 5.1L8 13.1 6.1 8z"/>' },
+    { id: "religion", name: "Faith", text: "Religion and prophecy: a messiah, a sect, a vision, the Missionaria Protectiva",
+      svg: '<path d="M8 1.2c1.3 2.6 4.2 4 4.2 7.4A4.2 4.2 0 0 1 8 13a4.2 4.2 0 0 1-4.2-4.4C3.8 6.9 5 5.8 5.6 4.3c.8 1.4 1.5 2 2.1 2.2C7.4 4.7 7.5 2.8 8 1.2z"/><rect x="4" y="13.6" width="8" height="1.6"/>' },
+    { id: "spice", name: "Spice & trade", text: "The spice, CHOAM, a harvest, a market, a monopoly",
+      svg: '<path d="M8 1.2c3 3.7 4.9 6.3 4.9 8.8a4.9 4.9 0 0 1-9.8 0c0-2.5 1.9-5.1 4.9-8.8z"/><circle class="hole" cx="6.4" cy="10" r="1.2"/>' },
+    { id: "galactic", name: "Galactic", text: "A turning point for the whole Imperium",
+      svg: '<path d="M8 .4l1.4 4.3 4-2.1-2.1 4L15.6 8l-4.3 1.4 2.1 4-4-2.1L8 15.6l-1.4-4.3-4 2.1 2.1-4L.4 8l4.3-1.4-2.1-4 4 2.1z"/>' },
+  ];
+  const OTHER = { id: "other", name: "Event", text: "Any other event", svg: '<circle cx="8" cy="8" r="3.4"/>' };
+  const kindById = (id) => KINDS.find((k) => k.id === id) || null;
+  // a guess, for events that don't say: the words first, then what the event links to
+  function guessKind(e) {
+    const t = `${e.name || ""} ${e.text || ""}`.toLowerCase(), refs = (e.refs || []).concat((e.changes || []).map((c) => c.ref));
+    if (/\bborn\b|\bbirth\b/.test(t)) return "birth";
+    if (/\b(dies|died|death|killed|kills|assassinat\w*|murder\w*|executed|slain|poisoned)\b/.test(t) || (e.changes || []).some((c) => /^dead$/i.test(c.value))) return "death";
+    if (/\b(battle|war|attack\w*|invasion|invades?|siege|conquer\w*|jihad|raid|skirmish|rebellion|revolt|massacre)\b/.test(t)) return "battle";
+    if (/\b(emperor|empress|throne|crown\w*|abdicat\w*|succe\w*|regent|reign|coronation)\b/.test(t)) return "rule";
+    if (/\b(scheme\w*|plot\w*|betray\w*|conspira\w*|spy|spies|secret\w*|treacher\w*|blackmail\w*|traitor)\b/.test(t)) return "intrigue";
+    if (/\b(spice|melange|choam|harvest\w*|trade|market|monopoly|smuggl\w*)\b/.test(t)) return "spice";
+    if (/\b(prophe\w*|messiah|religio\w*|faith|sect|missionaria|temple|priest\w*|vision)\b/.test(t)) return "religion";
+    if (/\b(founded|founds|founding|establish\w*|charter\w*)\b/.test(t)) return "founding";
+    if (/\b(discover\w*|invent\w*|machines?|technolog\w*|expedition)\b/.test(t)) return "discovery";
+    if ((e.changes || []).some((c) => c.field === "house") || refs.some((r) => /^houses:/.test(r))) return "house";
+    if (refs.some((r) => /^planets:/.test(r))) return "planet";
+    if (refs.some((r) => /^npcs:/.test(r))) return "character";
+    return "galactic";
+  }
+  const kindOf = (e) => kindById(e && e.kind) || kindById(guessKind(e || {})) || OTHER;
+  const icon = (k, cls) => `<svg class="tl-ico${cls ? " " + cls : ""}" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor">${k.svg}</svg>`;
+
+  G.timeline = { campaign, branches, branchOf, visible, asOf, eventsFor, yearText, eraOf, nowSet, describeChange, now: () => T().now, stateAt: (b, y) => stateAt(b, y), KINDS, kindOf, icon };
 
 
   // ---------------- the scale: years to pixels ----------------
@@ -116,7 +170,7 @@
   const editable = (b) => b && b.custom;
   const side = () => (T().side = Object.assign({ year: true, info: true }, T().side));
   const COLORS = ["#e2c391", "#86aef0", "#7fc48b", "#d98bd0", "#e8a050", "#6fd0c8", "#f08a78"];
-  const ROW = 56, AXIS = 34, CURVE = 42;  // a row's height, the year axis under the rows, a fork's curve
+  const ROW = 62, AXIS = 34, CURVE = 42;  // a row's height, the year axis under the rows, a fork's curve
   let colorOf = {};
   const color = (bid) => colorOf[bid] || COLORS[0];
   const forkKey = (b) => (b.fork ? key(b.fork.year, b.fork.seq) : -Infinity);
@@ -131,8 +185,9 @@
   }
 
   function graph(view) {
-    const rows = rowsOf(), byB = {}, evs = allEvents();
-    evs.forEach((e) => (byB[e.branch] = byB[e.branch] || []).push(e));
+    const rows = rowsOf(), byB = {}, evs = allEvents(), hide = new Set(T().hideKinds || []);
+    // the kinds hidden in the Key stay off the lines (the picked event always shows); the scale keeps every year
+    evs.forEach((e) => { if (e.id === T().sel || !hide.has(kindOf(e).id)) (byB[e.branch] = byB[e.branch] || []).push(e); });
     scale = buildScale(evs.map((e) => e.year).concat(TL.eras.flatMap((er) => [er.from, er.to]), rows.filter((r) => r.b.fork).map((r) => r.b.fork.year)));
     const W = scale.width, at = {};
     colorOf = {};
@@ -148,7 +203,7 @@
       (byB[r.b.id] || []).slice().sort((a, z) => key(a.year, a.seq) - key(z.year, z.seq)).forEach((e) => (years[e.year] = years[e.year] || []).push(e));
       r.dots = [];
       Object.keys(years).forEach((y) => {
-        const g = years[y], n = g.length, sp = n > 1 ? Math.min(18, 64 / (n - 1)) : 0, half = (sp * (n - 1)) / 2;
+        const g = years[y], n = g.length, sp = n > 1 ? Math.min(25, 75 / (n - 1)) : 0, half = (sp * (n - 1)) / 2;
         const base = Math.max(xAt(+y), p ? r.x0 + 10 + half : -Infinity);
         g.forEach((e, i) => r.dots.push({ e, x: base - half + i * sp }));
       });
@@ -176,13 +231,13 @@
       const placed = [], fits = (d) => { const [a, b] = span(d); return placed.every(([c, z]) => b <= c || a >= z); };
       r.dots.filter((d) => d.e.id === sel).concat(r.dots.filter((d) => d.e.id !== sel)).forEach((d) => { if (fits(d)) { placed.push(span(d)); d.named = true; } });
       r.dots.forEach(({ e, x, named }) => {
-        const on = e.id === sel, cls = `${on ? " on" : ""}${inView.has(e.id) ? "" : " off"}`, t = `${yearText(e.year, e.circa)}: ${e.name}`;
-        dots += `<button class="tlx-dot${cls}${e._custom ? " custom" : ""}" style="left:${X(x)};top:${r.y}px;--c:${r.c}" data-act="tlSel" data-id="${esc(e.id)}" title="${esc(t)}" aria-label="${esc(t)}"></button>`;
-        if (named) names += `<button class="tlx-name${cls}" style="left:${X(x)};top:${r.y - 12}px" data-act="tlSel" data-id="${esc(e.id)}" tabindex="-1">${esc(e.name)}</button>`;
+        const on = e.id === sel, cls = `${on ? " on" : ""}${inView.has(e.id) ? "" : " off"}`, k = kindOf(e), t = `${yearText(e.year, e.circa)} · ${k.name}: ${e.name}`;
+        dots += `<button class="tlx-dot k-${k.id}${cls}${e._custom ? " custom" : ""}" style="left:${X(x)};top:${r.y}px;--c:${r.c}" data-act="tlSel" data-id="${esc(e.id)}" title="${esc(t)}" aria-label="${esc(t)}">${icon(k)}</button>`;
+        if (named) names += `<button class="tlx-name${cls}" style="left:${X(x)};top:${r.y - 15}px" data-act="tlSel" data-id="${esc(e.id)}" tabindex="-1">${esc(e.name)}</button>`;
       });
     });
     // each line's name rides along its line at the left edge of what you can see (js: placeTags)
-    const tags = rows.map((r) => `<button class="tlx-tag${r.b.id === view.id ? " on" : ""}" style="left:${X(r.x0 + 8)};top:${r.y + 9}px;--c:${r.c}" data-act="tlView" data-b="${esc(r.b.id)}" data-x0="${f(r.x0 + 8)}" data-x1="${f(r.x1)}" title="${esc(r.b.text || r.b.name)}">${r.p ? "⑂ " : ""}${esc(r.b.name)}</button>`).join("");
+    const tags = rows.map((r) => `<button class="tlx-tag${r.b.id === view.id ? " on" : ""}" style="left:${X(r.x0 + 8)};top:${r.y + 15}px;--c:${r.c}" data-act="tlView" data-b="${esc(r.b.id)}" data-x0="${f(r.x0 + 8)}" data-x1="${f(r.x1)}" title="${esc(r.b.text || r.b.name)}">${r.p ? "⑂ " : ""}${esc(r.b.name)}</button>`).join("");
     const s = scale.stops;
     const ticks = s.map((p) => `<div class="tlx-tick" style="left:${X(p.x)}"><span>${esc(yearText(p.y))}</span></div>`).join("");
     const gaps = s.slice(1).map((b, i) => { const a = s[i], g = b.y - a.y; return g >= 150 ? `<div class="tlx-gap" style="left:${X((a.x + b.x) / 2)}">${g.toLocaleString()} years</div>` : ""; }).join("");
@@ -203,7 +258,7 @@
       <div class="gx-body">
         ${era ? `<p><b>${esc(era.name)}</b> <span class="muted small">${esc(yearText(era.from))} – ${esc(yearText(era.to))} · ${esc(era.src)}</span><br/>${esc(era.text)}</p>` : `<p class="muted">Before the eras of play.</p>`}
         <button class="gx-btn small ${T().follow ? "on" : ""}" data-act="tlFollow" aria-pressed="${!!T().follow}" title="When on, the Compendium shows every entry as it stands at the year under the center line">${T().follow ? "✓ Compendium follows this year" : "Compendium shows the books"}</button>
-        ${thisYear.length ? `<h4>This year</h4><ul>${thisYear.map((e) => `<li><button class="db-link" data-act="tlSel" data-id="${esc(e.id)}">${esc(e.name)}</button></li>`).join("")}</ul>` : ""}
+        ${thisYear.length ? `<h4>This year</h4><ul>${thisYear.map((e) => `<li>${icon(kindOf(e))}<button class="db-link" data-act="tlSel" data-id="${esc(e.id)}">${esc(e.name)}</button></li>`).join("")}</ul>` : ""}
         <h4>As things stand in ${esc(view.name)}</h4>
         ${state.length ? `<dl class="tlx-state">${Object.values(groups).map((g) => `<dt><a class="db-link" data-act="tlOpen" data-id="${esc(g.row.id)}">${esc(g.row.name)}</a></dt><dd>${g.items.map((s) =>
           `${esc(FIELD_LABEL[s.field] || s.field)}: <b>${s.value === "" ? "none" : esc(s.value)}</b> <span class="muted small">since ${esc(yearText(s.e.year, s.e.circa))}</span>`).join("<br/>")}</dd>`).join("")}</dl>`
@@ -224,7 +279,9 @@
     const refs = (e.refs || []).map((r) => { const t = resolve(r); return t ? `<a class="db-link" data-act="tlOpen" data-id="${esc(t.id)}">${esc(t.name)}</a>` : esc(r.slice(r.indexOf(":") + 1)); });
     const changes = (e.changes || []).map((c) => `<li>${describeChange(c).html}</li>`).join("");
     const source = e.src && e.src !== "Homebrew" ? esc(e.src) : e.url ? `<a href="${esc(e.url)}" target="_blank" rel="noopener">Dune Wiki${e.canon ? ` (${esc(e.canon === "Original" ? "Frank Herbert's novels" : e.canon)})` : ""} ↗</a>` : e._custom ? "Your event" : "";
+    const k = kindOf(e);
     return `<div class="gx-head"><div class="gx-kicker">${swatch(b ? b.id : "")}${esc(yearText(e.year, e.circa))} · ${esc(b ? b.name : "")}</div>
+        <div class="tlx-kind" title="${esc(k.text)}">${icon(k)}${esc(k.name)}</div>
         <h2 class="tlx-h">${esc(e.name)}</h2><button class="gx-close" data-act="tlClose" aria-label="Close the event" title="Close (Esc)">✕</button></div>
       <div class="gx-body">
         ${e._inherited ? `<p class="gx-note">Shared history: ${esc((branchOf(T().view) || {}).name || "")} splits from ${esc(b ? b.name : "")} after this.</p>` : ""}
@@ -280,6 +337,9 @@
           <label class="check"><input type="checkbox" data-bind="timeline.form.circa" data-type="bool" ${f.circa ? "checked" : ""}/> Approximate</label></div>
         <label>Title <input type="text" data-bind="timeline.form.name" value="${esc(f.name)}" placeholder="What happened"/></label>
         <label>Details <textarea data-bind="timeline.form.text" rows="4">${esc(f.text)}</textarea></label>
+        <div class="tlx-lbl">Kind</div>
+        <div class="tlx-kinds">${[{ id: "", name: "Automatic", text: `Guess from the title, details and links (now: ${kindOf(Object.assign({}, f, { kind: "" })).name})`, svg: kindOf(Object.assign({}, f, { kind: "" })).svg }].concat(KINDS).map((k) =>
+          `<button class="tlx-kbtn${(f.kind || "") === k.id ? " on" : ""}${k.id ? "" : " auto"}" data-act="tlFormKind" data-k="${k.id}" title="${esc(k.text)}">${icon(k)}${esc(k.name)}</button>`).join("")}</div>
         <div class="gx-sec"><h4>Links</h4>
           <p class="gx-note">Pick an entry, then add it as involved, or change one of its fields from this date on (a character's status, a planet's ruling House…).</p>
           <div class="tlx-pick">${G.select("timeline.form.table", tableOptions.map((k) => ({ v: k, l: (DB.META[k] || {}).title || k })))}
@@ -291,6 +351,18 @@
           <div class="tlx-chips">${pending || `<span class="muted small">Nothing linked yet.</span>`}</div></div>
         <div class="gx-actions"><button class="gx-btn primary" data-act="tlSave">${f.editId ? "Save changes" : "Add event"}</button><button class="gx-btn" data-act="tlCancel">Cancel</button></div>
       </div>`;
+  }
+
+  // the Key: every kind of event with its symbol and how many the followed timeline has; click to show or hide
+  function keyPanel(view) {
+    const hide = new Set(T().hideKinds || []), count = {};
+    visible(view.id).forEach((e) => { const k = kindOf(e).id; count[k] = (count[k] || 0) + 1; });
+    return `<section class="gx-panel tlx-key" aria-label="Key">
+        <div class="tlx-key-head"><b>Key</b><span class="muted small">click to show or hide</span><button class="gx-close" data-act="tlSide" data-s="key" aria-label="Close the key">✕</button></div>
+        <div class="tlx-key-list">${KINDS.map((k) => `<button class="tlx-krow${hide.has(k.id) ? " hidden" : ""}" data-act="tlKind" data-k="${k.id}" aria-pressed="${!hide.has(k.id)}" title="${esc(k.text)}">
+          <span class="tlx-kdot">${icon(k)}</span><span class="tlx-kname">${esc(k.name)}</span><span class="tlx-kn">${count[k.id] || ""}</span></button>`).join("")}</div>
+        <div class="gx-actions"><button class="gx-btn small" data-act="tlKind" data-k="*">Show all</button></div>
+      </section>`;
   }
 
   G.views.timeline = () => {
@@ -307,12 +379,14 @@
           <button class="gx-btn" data-act="tlNewEvent" title="Add an event to ${esc(view.name)} at the year under the center line">＋ Event</button>
           <button class="gx-btn ${sd.year ? "on" : ""}" data-act="tlSide" data-s="year" aria-pressed="${!!sd.year}" title="The year under the center line: its era and what holds">Year</button>
           <button class="gx-btn ${sd.info ? "on" : ""}" data-act="tlSide" data-s="info" aria-pressed="${!!sd.info}" title="The picked event, or the timeline">Details</button>
+          <button class="gx-btn ${sd.key ? "on" : ""}${(tl.hideKinds || []).length ? " filtered" : ""}" data-act="tlSide" data-s="key" aria-pressed="${!!sd.key}" title="What the symbols mean; show or hide each kind of event">Key${(tl.hideKinds || []).length ? ` · ${KINDS.length - tl.hideKinds.length} of ${KINDS.length}` : ""}</button>
           ${castButtons()}
           <button class="gx-btn" data-act="tlFull" title="Full screen">⛶</button>
         </div>
       </div>
       <section class="gx-panel gx-left tlx-left" id="tlLore" ${sd.year ? "" : "hidden"}>${sd.year ? lorePanel(centerYear()) : ""}</section>
       <section class="gx-panel gx-right tlx-right" id="tlDetail" ${sd.info ? "" : "hidden"}>${sd.info ? detail(view) : ""}</section>
+      ${sd.key ? keyPanel(view) : ""}
       <div class="gx-bottom tlx-bottom"><div class="tlx-eras">${TL.eras.map((er) => `<button class="gx-btn" data-act="tlJump" data-y="${er.from}" title="${esc(er.text)}">${esc(er.name)}</button>`).join("")}<button class="gx-btn" data-act="tlJump" data-y="10190">The RPG (10190 AG)</button></div>
         <span class="tlx-hint">Drag or scroll · ← → step · click a line to follow it</span></div>
     </div>`;
@@ -344,10 +418,10 @@
       let label = "";
       const row = lastX[0] <= lastX[1] ? 0 : 1;
       if (e.id === (sel && sel.id) || x - lastX[row] > 230) { lastX[row] = x; label = `<span class="ct-name r${row}" style="${X(x)}">${esc(e.name)}</span>`; }
-      return `<i class="ct-dot ${e._custom ? "custom" : ""} ${sel && e.id === sel.id ? "on" : ""}" style="${X(x)};--lane:${lane}"></i>${label}`;
+      return `<i class="ct-dot k-${kindOf(e).id} ${e._custom ? "custom" : ""} ${sel && e.id === sel.id ? "on" : ""}" style="${X(x)};--lane:${lane}">${icon(kindOf(e))}</i>${label}`;
     }).join("");
     const era = eraOf(focus);
-    const card = sel ? `<div class="ct-card"><small>${esc(yearText(sel.year, sel.circa))}</small><h2>${esc(sel.name)}</h2>${sel.text ? `<p>${esc(sel.text)}</p>` : ""}</div>` : "";
+    const card = sel ? `<div class="ct-card"><small>${icon(kindOf(sel))}${esc(yearText(sel.year, sel.circa))} · ${esc(kindOf(sel).name)}</small><h2>${esc(sel.name)}</h2>${sel.text ? `<p>${esc(sel.text)}</p>` : ""}</div>` : "";
     return { x: xAt(focus), html: `<div class="ct">
         <div class="ct-head"><small>${esc(view.name)}</small><b>${esc(yearText(focus))}</b>${era ? `<span>${esc(era.name)}</span>` : ""}</div>
         <div class="ct-strip"><div class="ct-center"></div><div class="ct-track" id="castTrack" style="width:${scale.width.toFixed(0)}px">${bands}<div class="ct-axis"></div>${ticks}${dots}</div></div>
@@ -440,7 +514,7 @@
     G.save();
   }
   function step(dir) {
-    const evs = visible(T().view); if (!evs.length) return;
+    const hide = new Set(T().hideKinds || []), evs = visible(T().view).filter((e) => !hide.has(kindOf(e).id)); if (!evs.length) return;
     const cur = evs.findIndex((e) => e.id === T().sel), y = centerYear();
     let i;
     if (cur >= 0 && +evs[cur].year === y) i = cur + dir;
@@ -472,6 +546,11 @@
   // ✕ on an event goes back to its timeline; on the timeline it hides the panel
   A.tlClose = () => { if (T().sel) { select("", false); return; } side().info = false; R(); };
   A.tlSide = (el) => { const k = el.dataset.s; side()[k] = !side()[k]; R(); };
+  // the Key: show or hide a kind of event (or all of them)
+  A.tlKind = (el) => { const k = el.dataset.k, h = new Set(T().hideKinds || []);
+    if (k === "*") h.clear(); else if (h.has(k)) h.delete(k); else h.add(k);
+    T().hideKinds = Array.from(h); R(); };
+  A.tlFormKind = (el) => { if (T().form) { T().form.kind = el.dataset.k; R(); } };
   A.tlFull = () => { const sc = scroller(), area = sc && sc.closest(".area"); if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); else (area || document.documentElement).requestFullscreen().catch(() => G.toast("Full screen isn't available here")); };
   A.tlStep = (el) => step(+el.dataset.dir);
   A.tlJump = (el) => centerOn(+el.dataset.y, true);
@@ -517,7 +596,7 @@
     const f = T().form; if (!f) return;
     if (!String(f.name || "").trim()) { G.toast("Give the event a title"); return; }
     if (String(f.year == null ? "" : f.year).trim() === "" || isNaN(+f.year)) { G.toast("Give the event a year"); return; }
-    const data = { name: f.name.trim(), year: +f.year, seq: String(f.seq == null ? "" : f.seq).trim() === "" || isNaN(+f.seq) ? 50 : +f.seq, circa: !!f.circa, text: f.text || "", refs: f.refs.slice(), changes: f.changes.slice() };
+    const data = { name: f.name.trim(), year: +f.year, seq: String(f.seq == null ? "" : f.seq).trim() === "" || isNaN(+f.seq) ? 50 : +f.seq, circa: !!f.circa, kind: f.kind || "", text: f.text || "", refs: f.refs.slice(), changes: f.changes.slice() };
     let id = f.editId;
     if (id) Object.assign(T().events.find((e) => e.id === id), data);
     else { id = "events:mine-" + uid(); T().events.push(Object.assign({ id, branch: T().view }, data)); }

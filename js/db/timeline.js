@@ -90,5 +90,21 @@
   ev(10192, "Masters of Dune: the Harkonnens strike back", "House Nagara holds Arrakis as the Harkonnens scheme to take it back; its alliances are decided in seven chapters played in any order.",
     Object.assign({}, A, { src: "Masters of Dune p.5", refs: ["houses:House Nagara", "houses:House Harkonnen"] }));
 
+  // what kind of event each one is: the timeline draws each kind with its own symbol (see KINDS in js/timeline.js)
+  const KIND = {
+    "The Butlerian Jihad begins": "battle", "The Butlerian Jihad ends": "galactic", "The Bene Gesserit are founded": "founding",
+    "The Battle of Corrin": "battle", "The Order of Mentats is founded": "founding", "The Guild's calendar begins": "galactic",
+    "Jessica is born": "birth", "Shaddam IV becomes Emperor": "rule", "Feyd-Rautha is born": "birth", "Shaddam's spice scheme": "intrigue",
+    "Paul Atreides is born": "birth", "Princess Irulan is born": "birth", "Arrakis is given to House Atreides": "house",
+    "The Harkonnen attack on Arrakeen": "battle", "Paul and Jessica flee to the Fremen": "character", "The Battle of Arrakeen": "battle",
+    "Paul becomes Emperor": "rule", "Muad'Dib's Jihad ends": "battle", "Paul walks into the desert": "character",
+    "Leto II takes the throne": "rule", "Leto II is killed": "death", "The first navigation machines": "discovery",
+    "The Scattering begins": "galactic", "The Honored Matres return": "galactic", "Rakis is destroyed": "planet",
+    "The Honored Matres conquer Junction and Ecaz": "battle",
+    "Arrakis is given to House Nagara": "house", "The heirs train on Giedi Prime": "house", "Countess Sakura Nagara is assassinated": "death",
+    "House Nagara takes command on Arrakis": "house", "Masters of Dune: the Harkonnens strike back": "intrigue",
+  };
+  R.forEach((e) => { e.kind = KIND[e.name] || ""; });
+
   DB.add("events", R);
 })();
