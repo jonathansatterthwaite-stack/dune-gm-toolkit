@@ -607,8 +607,19 @@ body.gx-open { overflow: hidden; }
 /* horizontal strips of book entries */
 .cg-archbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
 .cg-archbar .cg-sub { margin: 0.4rem 0 0; }
-.cg-jump { display: flex; flex-wrap: wrap; gap: 0.3rem; }
-.cg-jump .chip { cursor: pointer; font: inherit; font-size: 0.8rem; }
+.cg-archbar .hint { margin: 0; flex: 1 1 320px; }
+/* archetype groups as vertical tabs beside the strip */
+.cg-tabbed { display: flex; gap: 0.9rem; align-items: stretch; min-width: 0; }
+.cg-tabbed > .cg-strip { flex: 1 1 auto; min-width: 0; }
+.cg-gtabs { flex: 0 0 190px; display: flex; flex-direction: column; gap: 0.3rem; padding: 0.7rem 0 0.4rem; overflow-y: auto; scrollbar-width: thin; }
+.cg-gtabs button { position: relative; text-align: left; display: flex; flex-direction: column; gap: 0.05rem; padding: 0.45rem 0.7rem 0.45rem 0.8rem; border: 1px solid var(--parch-edge); border-radius: 6px; background: var(--surface); color: var(--ink); cursor: pointer; font: inherit; }
+.cg-gtabs button:hover { background: var(--parch-2); }
+.cg-gtabs button.on { background: var(--parch-2); border-color: var(--book-red); box-shadow: inset 3px 0 0 var(--book-red); }
+.cg-gtabs .over { font-family: var(--serif); font-variant: small-caps; letter-spacing: 0.08em; font-size: 0.82rem; color: var(--book-red); }
+.cg-gtabs b { font-family: var(--serif); font-variant: small-caps; letter-spacing: 0.04em; font-size: 1.12rem; line-height: 1.1; }
+.cg-gtabs .cg-gmine { font-style: normal; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--book-red); }
+.cg-gtabs .cg-gmine::before { content: "✓ "; }
+.cg-glancebox { overflow-y: auto; min-height: 0; scrollbar-width: thin; }
 .cg-arrows { display: flex; gap: 0.3rem; }
 .cg-strip { display: flex; gap: 0; overflow-x: auto; scroll-snap-type: x proximity; padding: 0.7rem 0 0.8rem; scrollbar-width: thin; overscroll-behavior-x: contain; }
 .cg-group { display: flex; gap: 0.8rem; padding-right: 1.4rem; margin-right: 1.4rem; border-right: 1px dashed var(--parch-edge); }
@@ -634,16 +645,17 @@ body.gx-open { overflow: hidden; }
 /* faction cards: always the book's light parchment, whatever the theme, so the art cut from the printed page sits on
    the colour it was printed on; the character stands behind the text as a faint watermark */
 .cg-facard { --parch: #fbf3e2; --parch-2: #f2e3c4; --parch-edge: #d9c19a; --book-red: #c0561e; --ink: #2b2118; --muted: #7a6a58;
-  color: var(--ink); flex-basis: 300px; min-width: 0; min-height: 560px; padding-bottom: 0.5rem; isolation: isolate; }
+  color: var(--ink); flex-basis: 300px; min-width: 0; min-height: 540px; padding-bottom: 0.5rem; isolation: isolate; }
 .cg-facard .cg-fac-text { position: relative; z-index: 1; }
-.cg-fac-art { position: absolute; inset: 0; z-index: 0; margin: 0; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; border-radius: inherit; pointer-events: none; }
-.cg-fac-art img { display: block; height: 94%; width: auto; max-width: none; object-fit: contain; opacity: 0.2; mix-blend-mode: multiply; user-select: none; transition: opacity 0.2s; }
-.cg-facard:hover .cg-fac-art img, .cg-facard.on .cg-fac-art img { opacity: 0.28; }
-.cg-fac-art.emblem { align-items: center; padding-top: 30%; opacity: 0.35; }
+/* the character fills the card as a background watermark: cropped to the card, head kept at the top */
+.cg-fac-bg { position: absolute; inset: 0; z-index: 0; border-radius: inherit; pointer-events: none;
+  background: center top / cover no-repeat; opacity: 0.2; mix-blend-mode: multiply; transition: opacity 0.2s; }
+.cg-facard:hover .cg-fac-bg, .cg-facard.on .cg-fac-bg { opacity: 0.28; }
+.cg-fac-art { position: absolute; inset: 0; z-index: 0; margin: 0; display: flex; align-items: center; justify-content: center; padding-top: 30%; border-radius: inherit; pointer-events: none; opacity: 0.35; }
 .cg-emblem { width: 150px; height: 150px; display: grid; place-items: center; transform: rotate(45deg); border: 2px solid var(--book-red); outline: 1px solid var(--parch-edge); outline-offset: 7px; background: var(--parch-2); }
 .cg-emblem span { transform: rotate(-45deg); font-family: var(--serif); font-variant: small-caps; font-size: 2.6rem; letter-spacing: 0.04em; color: var(--book-red); }
 .cg-facard .pg { position: relative; z-index: 1; }
-#cgFacStrip .cg-banner { min-height: 560px; }
+#cgFacStrip .cg-banner { min-height: 540px; }
 .cg-glance { border-collapse: collapse; width: 100%; max-width: 560px; font-size: 0.92rem; background: var(--parch); }
 .cg-glance th { font-family: var(--serif); font-variant: small-caps; text-align: left; padding: 0.35rem 0.6rem; border-bottom: 2px solid var(--book-red); }
 .cg-glance td { padding: 0.3rem 0.6rem; border-bottom: 1px solid var(--parch-edge); }
@@ -695,8 +707,14 @@ body.gx-open { overflow: hidden; }
   .cg-steps button.on { padding-right: 0.7rem; }
   .cg-arch { flex-basis: 78cqw; max-width: 300px; }
   .cg-banner { flex-basis: 62cqw; max-width: 230px; }
-  .cg-facard { min-height: 520px; }
+  .cg-facard { min-height: 500px; }
   #cgFacStrip .cg-banner, .cg-strip .cg-banner { min-height: 0; align-self: flex-start; flex-basis: 52cqw; }
+  .cg-tabbed { flex-direction: column; gap: 0.3rem; }
+  .cg-gtabs { flex: 0 0 auto; flex-direction: row; overflow-x: auto; overflow-y: hidden; padding: 0.2rem 0 0.3rem; }
+  .cg-gtabs button { flex: 0 0 auto; padding: 0.3rem 0.6rem; }
+  .cg-gtabs button.on { box-shadow: inset 0 -3px 0 var(--book-red); }
+  .cg-gtabs .over, .cg-gtabs .cg-gmine { display: none; }
+  .cg-gtabs b { font-size: 0.98rem; }
   .cg-review { grid-template-columns: minmax(0, 1fr); }
   .cg-nav { position: sticky; bottom: 0; background: var(--bg); padding: 0.5rem 0; margin-bottom: 0; z-index: 5; }
 }
@@ -705,13 +723,20 @@ body.gx-open { overflow: hidden; }
 html.cg-on main { max-width: none; }
 html.cg-on .cg-wrap { max-width: none; }
 .cg-nav { position: sticky; bottom: 0; z-index: 5; background: var(--bg); padding: 0.55rem 0; margin-bottom: 0; }
-/* fitted screens: each strip and its controls fill the window under the header; Back/Next stay pinned below */
-html.cg-fit { scroll-snap-type: y proximity; }
-html.cg-fit body.layout { scroll-snap-type: none; }
-html.cg-fit .area[data-ed="characters"] .area-body { scroll-snap-type: y proximity; }
-html.cg-fit .cg-fitblock { scroll-snap-align: start; scroll-margin-top: calc(var(--cg-header, 88px) + 8px); }
-html.cg-fit .cg-strip { height: var(--h, auto); scroll-snap-type: none; padding: 0.7rem 0 0.4rem; box-sizing: border-box; }
-html.cg-fit .cg-strip-hint { display: none; }
+/* fitted screens (the Faction and Archetype steps): the creator is exactly the height of the window or area, the
+   strip of cards takes what's left under the heading, and Back/Next sit at the bottom: only sideways scrolling */
+html.cg-fit .cg-wrap.cg-fillstep { display: flex; flex-direction: column; height: var(--cg-avail); overflow: hidden; }
+html.cg-fit .cg-fillstep > .cg-top, html.cg-fit .cg-fillstep > .cg-steps, html.cg-fit .cg-fillstep > .cg-nav { flex: 0 0 auto; }
+html.cg-fit .cg-fillstep > .cg-screen { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+html.cg-fit .cg-fillstep .cg-screen > .cg-h, html.cg-fit .cg-fillstep .cg-screen > .ch-issues { flex: 0 0 auto; }
+html.cg-fit .cg-fillstep .cg-h { margin-bottom: 0.4rem; }
+html.cg-fit .cg-fillstep .cg-h h2 { font-size: 1.8rem; }
+html.cg-fit .cg-fillstep .cg-fitblock { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+html.cg-fit .cg-fillstep .cg-archbar { flex: 0 0 auto; margin-bottom: 0; }
+html.cg-fit .cg-fillstep .cg-tabbed, html.cg-fit .cg-fillstep .cg-glancebox { flex: 1 1 auto; min-height: 0; }
+html.cg-fit .cg-fillstep .cg-fitblock > .cg-strip, html.cg-fit .cg-fillstep .cg-tabbed > .cg-strip { flex: 1 1 auto; min-height: 0; }
+html.cg-fit .cg-fillstep .cg-nav { position: static; margin: 0.5rem 0 0; padding: 0; }
+html.cg-fit .cg-strip { scroll-snap-type: none; padding: 0.7rem 0 0.4rem; box-sizing: border-box; }
 html.cg-fit .cg-banner { flex-basis: clamp(250px, calc(var(--h) * 0.36), 330px); min-height: 0; }
 .cg-banner .title { overflow-wrap: normal; word-break: keep-all; }
 html.cg-fit #cgFacStrip .cg-banner { min-height: 0; }

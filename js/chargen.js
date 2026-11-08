@@ -86,19 +86,31 @@
   // ---------- steps ----------
   const STEPS = [
     { key: "start", n: "One", title: "Concept", lead: "Who is your character, and what part do they play in your House?" },
-    { key: "archetype", n: "Two", title: "Archetype", lead: "Pick the archetype that fits your concept. It sets your trait, your two best skills and suggests focuses and a talent." },
-    { key: "skills", n: "Three", title: "Skills", lead: "Your archetype sets your starting skills. Now spend points to make the character yours." },
-    { key: "focuses", n: "Four", title: "Focuses", lead: "Focuses are the specialities where your character really shines." },
-    { key: "talents", n: "Five", title: "Talents", lead: "Talents are special tricks and training that bend the rules in your favor." },
-    { key: "drives", n: "Six", title: "Drives", lead: "Drives are what your character believes in. Every test adds a drive's rating to a skill, so your beliefs shape how you succeed." },
-    { key: "assets", n: "Seven", title: "Assets", lead: "Assets are the tools, contacts and leverage your character brings to the game." },
-    { key: "finish", n: "Eight", title: "Finishing touches", lead: "A personal trait, an ambition, and the details that bring your character to life." },
-    { key: "review", n: "Nine", title: "Review", lead: "Check everything over. You can jump back to any step." },
+    { key: "faction", n: "Two", title: "Faction", lead: "Most characters are agents of their House. If yours trained with one of the great schools or factions, pick it: you gain its trait and must take its talents." },
+    { key: "archetype", n: "Three", title: "Archetype", lead: "Pick the archetype that fits your concept. It sets your trait, your two best skills and suggests focuses and a talent." },
+    { key: "skills", n: "Four", title: "Skills", lead: "Your archetype sets your starting skills. Now spend points to make the character yours." },
+    { key: "focuses", n: "Five", title: "Focuses", lead: "Focuses are the specialities where your character really shines." },
+    { key: "talents", n: "Six", title: "Talents", lead: "Talents are special tricks and training that bend the rules in your favor." },
+    { key: "drives", n: "Seven", title: "Drives", lead: "Drives are what your character believes in. Every test adds a drive's rating to a skill, so your beliefs shape how you succeed." },
+    { key: "assets", n: "Eight", title: "Assets", lead: "Assets are the tools, contacts and leverage your character brings to the game." },
+    { key: "finish", n: "Nine", title: "Finishing touches", lead: "A personal trait, an ambition, and the details that bring your character to life." },
+    { key: "review", n: "Ten", title: "Review", lead: "Check everything over. You can jump back to any step." },
   ];
+  const at = (key) => STEPS.findIndex((s) => s.key === key);
+  // the screens of cards, sized to fit the window so they only scroll sideways
+  const FILL = new Set(["faction", "archetype"]);
+  // The Fremen (Sand and Dust) and Guild (Great Game) archetypes are offered only to characters of that faction.
+  const GROUP_FAC = { "Sand and Dust": "Fremen", "Great Game": "Spacing Guild" };
+  const groupOpen = (g, c) => !GROUP_FAC[g.key] || c.faction === GROUP_FAC[g.key];
+  const groupOf = (a) => (a.book === "Core" ? a.primary : a.book);
+  function archLock(c) {
+    const a = H().arch(c.archetype), need = a && GROUP_FAC[a.book];
+    return need && c.faction !== need ? [`${a.name} is ${need === "Fremen" ? "a Fremen" : "a Spacing Guild"} archetype: choose the ${need} faction, or another archetype.`] : [];
+  }
   function stepIssues(c) {
     const { v } = H().validate(c);
     const name = c.name.trim() ? [] : ["Give them a name."];
-    const map = { start: name.concat(v.concept), archetype: v.archetype, skills: v.skills, focuses: v.focuses, talents: v.talents, drives: v.drives, assets: v.assets, finish: v.finish.filter((m) => m !== "Give them a name.") };
+    const map = { start: name.concat(v.concept), faction: [], archetype: v.archetype.concat(archLock(c)), skills: v.skills, focuses: v.focuses, talents: v.talents, drives: v.drives, assets: v.assets, finish: v.finish.filter((m) => m !== "Give them a name.") };
     map.review = Object.values(map).flat();
     return map;
   }
@@ -109,7 +121,6 @@
 
   function screenStart(c) {
     const base = `chars.list.#${c.id}`;
-    const facs = [{ name: "", trait: "", mandatory: [], book: "Core p.109", suggest: "", none: true }].concat(C.FACTIONS);
     return `<div class="cg-kinds">
         <button class="cg-kind ${c.kind === "pc" ? "on" : ""}" data-act="cgKind" data-k="pc"><b>Planned character</b><span>Build the full character now: archetype, skills, four focuses, three talents, drives and three assets.</span><i>Core p.108</i></button>
         <button class="cg-kind ${c.kind === "quick" ? "on" : ""}" data-act="cgKind" data-k="quick"><b>Create in play</b><span>Start with the essentials — two skills, two focuses, one talent, one drive — and fill in the rest as you play.</span><i>Core p.132</i></button>
@@ -117,15 +128,17 @@
       <div class="cg-two">
         <label class="field">Name<input type="text" data-bind="${base}.name" value="${esc(c.name)}" placeholder="e.g. Kara Molay"/></label>
         <label class="field">Concept<input type="text" data-bind="${base}.concept" value="${esc(c.concept)}" placeholder="One line: who are they and what do they do for the House?"/></label>
-      </div>
-      <div class="cg-fitblock">
+      </div>`;
+  }
+  function screenFaction(c) {
+    const facs = [{ name: "", trait: "", mandatory: [], book: "Core p.109", suggest: "", none: true }].concat(C.FACTIONS);
+    return `<div class="cg-fitblock">
       <div class="cg-archbar">
-        <h3 class="cg-sub">Faction template <span class="muted small">(optional)</span></h3>
+        <p class="hint">Optional. Choose House Agent for none.${c.faction === "Fremen" || c.faction === "Spacing Guild" ? ` ${c.faction === "Fremen" ? "Fremen" : "Guild"} characters can also take the ${c.faction === "Fremen" ? "Fremen" : "Guild"} archetypes in the next step.` : ""}</p>
         <div class="cg-arrows"><button class="btn small" data-act="cgScroll" data-strip="cgFacStrip" data-d="-1" aria-label="Scroll left">◀</button><button class="btn small" data-act="cgScroll" data-strip="cgFacStrip" data-d="1" aria-label="Scroll right">▶</button></div>
       </div>
-      <p class="hint">Most characters are agents of their House. If yours trained with one of the great schools or factions, pick it here: you gain its trait and must take its talents.</p>
       <div class="cg-strip" id="cgFacStrip"><section class="cg-group">
-        <div class="cg-banner"><div class="over">Step one</div><div class="title">Factions</div><p>Templates for characters shaped by the great schools and powers of the Imperium. Each adds a trait and required talents on top of your archetype.</p><span class="pg">Core p.109</span></div>
+        <div class="cg-banner"><div class="over">Faction templates</div><div class="title">Factions</div><p>Templates for characters shaped by the great schools and powers of the Imperium. Each adds a trait and required talents on top of your archetype.</p><span class="pg">Core p.109</span></div>
         ${facs.map((f) => facCard(f, c)).join("")}
       </section></div>
       </div>`;
@@ -144,13 +157,14 @@
     "CHOAM Agent": "Serves two masters: the House, and the great trade combine that enriches it.",
   };
   // Tall entries like the book's faction pages, on the book's parchment, with the character as a faint watermark
-  // behind the text. The art is extracted locally from your PDFs (tools/extract-art.py); without it (the public
-  // site) a drawn emblem stands in. House Agent and Ginaz Cadet have no portrait of their own.
+  // filling the card behind the text (a background, so every card is the same size whatever the picture's shape).
+  // The art is extracted locally from your PDFs (tools/extract-art.py); without it (the public site) a drawn emblem
+  // stands in. House Agent and Ginaz Cadet have no portrait of their own.
   function facCard(f, c) {
     const on = c.faction === f.name, title = f.none ? "House Agent" : f.name;
     const art = window.DUNE_ART && window.DUNE_ART.factions[f.name];
     const initials = title.split(/\s+/).filter((w) => /^[A-Z]/.test(w)).slice(0, 2).map((w) => w[0]).join("");
-    return `<article class="cg-arch cg-facard ${on ? "on" : ""}" data-act="cgFaction" data-f="${esc(f.name)}" tabindex="0" role="button" aria-pressed="${on}">
+    return `<article class="cg-arch cg-facard ${art ? "has-art" : ""} ${on ? "on" : ""}" data-act="cgFaction" data-f="${esc(f.name)}" tabindex="0" role="button" aria-pressed="${on}">
       ${on ? `<span class="cg-stamp">Chosen</span>` : ""}
       <div class="cg-fac-text">
         <h4>${esc(title)}</h4>
@@ -161,8 +175,7 @@
           <li><b>Mandatory Talents:</b> ${f.none ? "None" : `${f.anyOf ? "One of " : ""}${esc(f.mandatory.join(", "))}${f.group ? `; ${esc(f.group.rule.replace(/^Master of Battle plus /, "plus "))}` : ""}`}</li>
         </ul>
       </div>
-      ${art ? `<figure class="cg-fac-art" aria-hidden="true"><img src="${esc(art.src)}" width="${art.w}" height="${art.h}" alt="" decoding="async" draggable="false"/></figure>`
-        : window.DUNE_ART ? "" : `<figure class="cg-fac-art emblem" aria-hidden="true"><div class="cg-emblem"><span>${esc(initials)}</span></div></figure>`}
+      ${art ? `<span class="cg-fac-bg" aria-hidden="true" style="background-image:url('${esc(art.src.replace(/'/g, "%27"))}')"></span>` : window.DUNE_ART ? "" : `<figure class="cg-fac-art emblem" aria-hidden="true"><div class="cg-emblem"><span>${esc(initials)}</span></div></figure>`}
       <span class="pg">${esc(f.book)}${art ? ` · art: ${esc(art.caption)}` : ""}</span>
     </article>`;
   }
@@ -188,23 +201,30 @@
   }
   function screenArchetype(c) {
     const w = W(), f = H().fac(c.faction);
-    const members = (g) => C.ARCHETYPES.filter((a) => (GROUPS.slice(0, 5).some((x) => x.key === g.key) ? a.book === "Core" && a.primary === g.key : a.book === g.key));
-    const glance = `<table class="cg-glance"><thead><tr><th>Archetype</th><th>Primary skill</th><th>Secondary skill</th></tr></thead><tbody>
-      ${C.ARCHETYPES.slice().sort((a, b) => a.name.localeCompare(b.name)).map((a) => `<tr class="${c.archetype === a.name ? "on" : ""}" data-act="cgArch" data-a="${esc(a.name)}"><td><b>${esc(a.name)}</b>${a.book !== "Core" ? ` <span class="muted small">${a.book === "Great Game" ? "GG" : "S&D"}</span>` : ""}</td><td>${a.primary}</td><td>${a.secondary}</td></tr>`).join("")}</tbody></table>`;
+    const groups = GROUPS.filter((g) => groupOpen(g, c));
+    const members = (g) => C.ARCHETYPES.filter((a) => groupOf(a) === g.key);
+    const mine = H().arch(c.archetype);
+    const tab = groups.find((g) => g.key === w.ag) || (mine && groups.find((g) => g.key === groupOf(mine))) || groups[0];
+    const tabs = `<div class="cg-gtabs" role="tablist" aria-orientation="vertical" aria-label="Archetype groups">${groups.map((g) => {
+      const on = g === tab, has = mine && groupOf(mine) === g.key;
+      return `<button role="tab" class="${on ? "on" : ""}" aria-selected="${on}" data-act="cgTab" data-g="${esc(g.key)}"><span class="over">${esc(g.over)}</span><b>${esc(g.title)}</b>${has ? `<i class="cg-gmine" title="Your archetype: ${esc(mine.name)}">${esc(mine.name)}</i>` : ""}</button>`;
+    }).join("")}</div>`;
+    const glance = `<div class="cg-glancebox"><table class="cg-glance"><thead><tr><th>Archetype</th><th>Primary skill</th><th>Secondary skill</th></tr></thead><tbody>
+      ${C.ARCHETYPES.filter((a) => groupOpen({ key: groupOf(a) }, c)).sort((a, b) => a.name.localeCompare(b.name)).map((a) => `<tr class="${c.archetype === a.name ? "on" : ""}" data-act="cgArch" data-a="${esc(a.name)}"><td><b>${esc(a.name)}</b>${a.book !== "Core" ? ` <span class="muted small">${a.book === "Great Game" ? "GG" : "S&D"}</span>` : ""}</td><td>${a.primary}</td><td>${a.secondary}</td></tr>`).join("")}</tbody></table></div>`;
+    const more = !GROUPS.every((g) => groupOpen(g, c)) ? " The Fremen and Guild archetypes need that faction." : "";
     return `<div class="cg-fitblock"><div class="cg-archbar">
-        <div class="cg-jump">${GROUPS.map((g) => `<button class="chip" data-act="cgJump" data-g="${esc(g.key)}">${esc(g.title)}</button>`).join("")}</div>
-        <div class="cg-arrows"><button class="btn small" data-act="cgGlance">${w.glance ? "Show the archetypes" : "Archetypes at a glance"}</button><button class="btn small" data-act="cgScroll" data-d="-1" aria-label="Scroll left">◀</button><button class="btn small" data-act="cgScroll" data-d="1" aria-label="Scroll right">▶</button></div>
+        <p class="hint">Click one to choose it. Any archetype can be reflavoured to fit your concept — check with your gamemaster.${more}</p>
+        <div class="cg-arrows"><button class="btn small" data-act="cgGlance">${w.glance ? "Show the archetypes" : "Archetypes at a glance"}</button>${w.glance ? "" : `<button class="btn small" data-act="cgScroll" data-d="-1" aria-label="Scroll left">◀</button><button class="btn small" data-act="cgScroll" data-d="1" aria-label="Scroll right">▶</button>`}</div>
       </div>
-      ${w.glance ? glance : `<div class="cg-strip" id="cgStrip">${GROUPS.map((g) => `<section class="cg-group" data-g="${esc(g.key)}">
-          <div class="cg-banner"><div class="over">${esc(g.over)}</div><div class="title">${esc(g.title)}</div><p>${esc(g.intro)}</p><span class="pg">${esc(g.src)}</span></div>
-          ${members(g).map((a) => archCard(a, c, f)).join("")}
-        </section>`).join("")}</div>`}</div>
-        ${w.glance ? "" : `<p class="hint cg-strip-hint">Scroll sideways through the archetypes${window.DUNE_FULLTEXT ? " (descriptions from your copy of the books)" : ""}. Click one to choose it. Any archetype can be reflavoured to fit your concept — check with your gamemaster.</p>`}`;
+      ${w.glance ? glance : `<div class="cg-tabbed">${tabs}<div class="cg-strip" id="cgStrip" role="tabpanel" aria-label="${esc(tab.title)}"><section class="cg-group" data-g="${esc(tab.key)}">
+          <div class="cg-banner"><div class="over">${esc(tab.over)}</div><div class="title">${esc(tab.title)}</div><p>${esc(tab.intro)}</p><span class="pg">${esc(tab.src)}</span></div>
+          ${members(tab).map((a) => archCard(a, c, f)).join("")}
+        </section></div></div>`}</div>`;
   }
 
   function screenSkills(c) {
     const a = H().arch(c.archetype);
-    if (!a) return `<p class="cg-need">Choose an archetype first — it sets your starting skills. <button class="btn small" data-act="cgGo" data-s="1">Go to Archetype</button></p>`;
+    if (!a) return `<p class="cg-need">Choose an archetype first — it sets your starting skills. <button class="btn small" data-act="cgGo" data-s="${at("archetype")}">Go to Archetype</button></p>`;
     const base = (s) => (c.kind === "quick" ? (s === a.primary ? 7 : s === a.secondary ? 6 : 0) : s === a.primary ? 6 : s === a.secondary ? 5 : 4);
     const left = c.kind === "pc" ? 5 - (SK.reduce((n, s) => n + c.skills[s], 0) - 23) : 0;
     return `${c.kind === "pc" ? `<p class="cg-points"><b>${left}</b> point${left === 1 ? "" : "s"} left to spend <span class="muted small">· 5 in total, no skill above 8</span></p>` : `<p class="cg-points">Creating in play: <b>${a.primary} 7</b> and <b>${a.secondary} 6</b>. Your other skills are set the first time you need them.</p>`}
@@ -325,14 +345,16 @@
   }
 
   // ---------- the view ----------
-  const BODY = { start: screenStart, archetype: screenArchetype, skills: screenSkills, focuses: screenFocuses, talents: screenTalents, drives: screenDrives, assets: screenAssets, finish: screenFinish, review: screenReview };
+  const BODY = { start: screenStart, faction: screenFaction, archetype: screenArchetype, skills: screenSkills, focuses: screenFocuses, talents: screenTalents, drives: screenDrives, assets: screenAssets, finish: screenFinish, review: screenReview };
   function view() {
-    const c = ch(), w = W(), iss = stepIssues(c), step = STEPS[w.step] || STEPS[0];
+    const c = ch(), w = W();
+    if (w.sv !== 2) { if (w.step >= 1) w.step++; w.sv = 2; }   // Faction became its own step after Concept
+    const iss = stepIssues(c), step = STEPS[w.step] || STEPS[0];
     CS().sel = c.id;
     const bar = `<nav class="cg-steps" aria-label="Creation steps">${STEPS.map((s, i) => `<button class="${i === w.step ? "on" : ""} ${s.key !== "review" && !iss[s.key].length ? "done" : ""}" data-act="cgGo" data-s="${i}" aria-current="${i === w.step ? "step" : "false"}"><span class="n">${s.key !== "review" && !iss[s.key].length && i !== w.step ? "✓" : i + 1}</span><span class="t">${esc(s.title)}</span></button>`).join("")}</nav>`;
     const msgs = step.key === "review" ? [] : iss[step.key];
     const prev = STEPS[w.step - 1], next = STEPS[w.step + 1];
-    return `<div class="cg-wrap">
+    return `<div class="cg-wrap ${FILL.has(step.key) ? "cg-fillstep" : ""}">
       <div class="cg-top"><div><span class="muted small">Guided creation · ${c.kind === "quick" ? "creating in play" : "planned character"}</span><h2>${esc(c.name || "New character")}${c.archetype ? ` <span class="muted">· ${esc(c.archetype)}</span>` : ""}</h2></div>
         <div class="c-actions"><button class="btn small" data-act="cgExit" title="Keep the character and open it in the full editor">Open in the full editor</button></div></div>
       ${bar}
@@ -361,20 +383,16 @@
       if (stripLeft[strip.id] != null) strip.scrollLeft = stripLeft[strip.id];
       else if (scrollToChosen) { const on = strip.querySelector(".cg-arch.on"); if (on && on.offsetLeft - strip.offsetLeft + on.offsetWidth > strip.clientWidth) strip.scrollLeft = on.offsetLeft - strip.offsetLeft - 16; }
     });
-    if (scrollTop) {
-      // on a fitted screen, open the Archetype step with its strip filling the view
-      const block = STEPS[W().step].key === "archetype" && document.documentElement.classList.contains("cg-fit") && document.querySelector(".cg-fitblock");
-      const box = areaBox();
-      if (block) block.scrollIntoView({ block: "start" }); else if (box) box.scrollTop = 0; else window.scrollTo(0, 0);
-    }
+    if (scrollTop) { const box = areaBox(); if (box) box.scrollTop = 0; else window.scrollTo(0, 0); }
     stripLeft = {}; scrollToChosen = false; scrollTop = false;
   });
   // Leaving the wizard (or the tab) drops the wide, fitted layout.
   G.afterRender.push((tab) => { if (tab !== "characters" || !CS().wiz) fitStrips(); });
 
-  // ---------- fit the strips to the screen ----------
-  // Each strip and its controls (.cg-fitblock) fill the window under the sticky header, with Back/Next
-  // pinned at the bottom; cards grow with the height. Only on screens big enough to make that worthwhile.
+  // ---------- fit the card screens to the screen ----------
+  // On the Faction and Archetype steps the whole creator fills the window (or its area) exactly: the strip of
+  // cards takes the height left under the heading, Back/Next sit at the bottom, and the cards grow with the
+  // height, so those screens only scroll sideways. Only when there's room enough to make that worthwhile.
   const root = document.documentElement;
   // in the toolkit the creator fills its area (js/areas.js), so "the screen" is that area
   const areaBox = () => document.querySelector('.area[data-ed="characters"] .area-body');
@@ -383,26 +401,34 @@
   const viewH = () => (areaBox() ? areaBox().clientHeight : innerHeight);
   const viewBottom = () => (areaBox() ? areaBox().getBoundingClientRect().bottom : innerHeight);
   function fitStrips() {
-    const on = G.visible("characters") && !!CS().wiz && !!document.querySelector(".cg-wrap");
-    const fit = on && viewW() >= 900 && viewH() >= 600;
+    const wrap = document.querySelector(".cg-wrap");
+    const on = G.visible("characters") && !!CS().wiz && !!wrap;
+    // the height from the top of the creator to the bottom of the window or area, as if scrolled to the top
+    let avail = 0;
+    if (on && wrap.classList.contains("cg-fillstep")) {
+      const box = areaBox(), top = wrap.getBoundingClientRect().top;
+      avail = box ? box.getBoundingClientRect().bottom - parseFloat(getComputedStyle(box).paddingBottom) - (top + box.scrollTop) : innerHeight - 8 - (top + scrollY);
+    }
+    const fit = avail >= 460;
     root.classList.toggle("cg-on", on);
     root.classList.toggle("cg-fit", fit);
-    const hh = areaBox() ? 0 : headerH();
-    root.style.setProperty("--cg-header", hh + "px");
-    const nav = document.querySelector(".cg-nav"), navH = nav ? nav.offsetHeight : 0;
+    root.style.setProperty("--cg-avail", Math.floor(avail) + "px");
     document.querySelectorAll(".cg-fitblock").forEach((b) => {
       const strip = b.querySelector(".cg-strip"); if (!strip) return;
       const cards = strip.querySelectorAll(".cg-arch:not(.cg-facard)");
       cards.forEach((card) => (card.style.flexBasis = ""));
       if (!fit) { strip.style.removeProperty("--h"); strip.style.removeProperty("--hn"); return; }
-      const other = b.offsetHeight - strip.offsetHeight;   // the heading, buttons and hint above the strip
-      const h = Math.max(440, Math.floor(viewH() - hh - navH - other - 20));
+      const h = strip.clientHeight;
       strip.style.setProperty("--h", h + "px"); strip.style.setProperty("--hn", (h / 720).toFixed(3));
-      // widen any archetype card whose text doesn't fit the height (long book descriptions), up to a limit
+      // widen the archetype cards until the longest text (book descriptions) fits the height, up to a limit,
+      // keeping every card in the strip the same width
+      let wide = 0;
       cards.forEach((card) => {
         let w = card.offsetWidth, guard = 0;
         while (card.scrollHeight > card.clientHeight + 1 && w < 620 && guard++ < 14) { w += 30; card.style.flexBasis = w + "px"; }
+        wide = Math.max(wide, w);
       });
+      cards.forEach((card) => (card.style.flexBasis = wide + "px"));
     });
   }
   let resizeT = 0;
@@ -447,7 +473,7 @@
   const A = G.actions;
   A.cgStart = () => {
     const c = H().blank("pc"); CS().list.unshift(c); CS().sel = c.id;
-    CS().wiz = { id: c.id, step: 0, fskill: "", tq: "", tg: "all", glance: false };
+    CS().wiz = { id: c.id, step: 0, sv: 2, ag: "", fskill: "", tq: "", tg: "all", glance: false };
     G.S.tab = "characters"; scrollTop = true; R();
   };
   A.cgGo = (el) => { const w = W(); w.step = Math.max(0, Math.min(STEPS.length - 1, +el.dataset.s)); scrollTop = true; scrollToChosen = true; R(); };
@@ -474,7 +500,7 @@
     if (old) { c.focuses = c.focuses.filter((f) => !old.focuses.includes(f.name)); c.talents = c.talents.filter((t) => !old.talents.includes(t.name)); }
     R();
   };
-  A.cgJump = (el) => { const g = document.querySelector(`.cg-group[data-g="${CSS.escape(el.dataset.g)}"]`), s = document.getElementById("cgStrip"); if (g && s) s.scrollTo({ left: g.offsetLeft - s.offsetLeft, behavior: "smooth" }); };
+  A.cgTab = (el) => { W().ag = el.dataset.g; R(); };
   A.cgScroll = (el) => { const s = document.getElementById(el.dataset.strip || "cgStrip"); if (s) s.scrollBy({ left: +el.dataset.d * s.clientWidth * 0.85, behavior: "smooth" }); };
   A.cgGlance = () => { scrollToChosen = true; W().glance = !W().glance; R(); };
   A.cgSkill = (el) => {
