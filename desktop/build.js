@@ -24,6 +24,8 @@ const TITLE = "Dune GM Toolkit";
       extraMetadata: { main: "desktop/main.js" },
       asar: true,
       npmRebuild: false,
+      // the Electron already installed for `npx electron .` (same version), so building needs no download
+      electronDist: "node_modules/electron/dist",
       win: { target: "portable", icon: "desktop/icon.png" },
       portable: { artifactName: TITLE + ".exe" },
     },
