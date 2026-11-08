@@ -93,6 +93,8 @@
       svg: '<path d="M8 1.2c1.3 2.6 4.2 4 4.2 7.4A4.2 4.2 0 0 1 8 13a4.2 4.2 0 0 1-4.2-4.4C3.8 6.9 5 5.8 5.6 4.3c.8 1.4 1.5 2 2.1 2.2C7.4 4.7 7.5 2.8 8 1.2z"/><rect x="4" y="13.6" width="8" height="1.6"/>' },
     { id: "spice", name: "Spice & trade", text: "The spice, CHOAM, a harvest, a market, a monopoly",
       svg: '<path d="M8 1.2c3 3.7 4.9 6.3 4.9 8.8a4.9 4.9 0 0 1-9.8 0c0-2.5 1.9-5.1 4.9-8.8z"/><circle class="hole" cx="6.4" cy="10" r="1.2"/>' },
+    { id: "ghola", name: "Ghola", text: "The dead return: grown again from their cells in a Tleilaxu axlotl tank, sometimes with their memories woken",
+      svg: '<path d="M13.3 4.3A6.6 6.6 0 1 0 14.6 8.6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M15.6 2.2l-.4 4.6-4.3-1.5z"/><circle cx="8" cy="6.1" r="1.9"/><path d="M4.7 12.4c0-2 1.5-3.6 3.3-3.6s3.3 1.6 3.3 3.6z"/>' },
     { id: "galactic", name: "Galactic", text: "A turning point for the whole Imperium",
       svg: '<path d="M8 .4l1.4 4.3 4-2.1-2.1 4L15.6 8l-4.3 1.4 2.1 4-4-2.1L8 15.6l-1.4-4.3-4 2.1 2.1-4L.4 8l4.3-1.4-2.1-4 4 2.1z"/>' },
   ];
@@ -101,6 +103,7 @@
   // a guess, for events that don't say: the words first, then what the event links to
   function guessKind(e) {
     const t = `${e.name || ""} ${e.text || ""}`.toLowerCase(), refs = (e.refs || []).concat((e.changes || []).map((c) => c.ref));
+    if (/\b(ghola|axlotl|reborn|revived|resurrect\w*)\b/.test(t)) return "ghola";
     if (/\bborn\b|\bbirth\b/.test(t)) return "birth";
     if (/\b(dies|died|death|killed|kills|assassinat\w*|murder\w*|executed|slain|poisoned)\b/.test(t) || (e.changes || []).some((c) => /^dead$/i.test(c.value))) return "death";
     if (/\b(battle|war|attack\w*|invasion|invades?|siege|conquer\w*|jihad|raid|skirmish|rebellion|revolt|massacre)\b/.test(t)) return "battle";
@@ -127,11 +130,13 @@
   // 3,500 years stay one stretch. The year under the center line drives the Compendium and the Year panel.
   const GAP = (g) => 86 + 46 * Math.log10(1 + Math.abs(g));
   let scale = { stops: [], width: 0 };
-  function buildScale(years) {
+  // crowd: how many events share a year on one line; they sit side by side, so that year gets room for them
+  function buildScale(years, crowd, spread) {
     const ys = Array.from(new Set(years.map(Number).filter((y) => !isNaN(y)))).sort((a, b) => a - b);
+    const room = (y) => (crowd && crowd[y] > 1 ? (crowd[y] - 1) * spread : 0);
     const stops = [];
     let x = 0;
-    ys.forEach((y, i) => { if (i) x += GAP(y - ys[i - 1]); stops.push({ y, x }); });
+    ys.forEach((y, i) => { if (i) x += GAP(y - ys[i - 1]) + (room(ys[i - 1]) + room(y)) / 2; stops.push({ y, x }); });
     return { stops, width: x };
   }
   function xAt(y) {
@@ -170,7 +175,8 @@
   const editable = (b) => b && b.custom;
   const side = () => (T().side = Object.assign({ year: true, info: true }, T().side));
   const COLORS = ["#e2c391", "#86aef0", "#7fc48b", "#d98bd0", "#e8a050", "#6fd0c8", "#f08a78"];
-  const ROW = 62, AXIS = 34, CURVE = 42;  // a row's height, the year axis under the rows, a fork's curve
+  const ROW = 62, AXIS = 34, CURVE = 42, SPREAD = 27;  // SPREAD: between events in the same year
+  const CAST_SPREAD = 44;  // the same on the player display  // a row's height, the year axis under the rows, a fork's curve
   let colorOf = {};
   const color = (bid) => colorOf[bid] || COLORS[0];
   const forkKey = (b) => (b.fork ? key(b.fork.year, b.fork.seq) : -Infinity);
@@ -188,7 +194,9 @@
     const rows = rowsOf(), byB = {}, evs = allEvents(), hide = new Set(T().hideKinds || []);
     // the kinds hidden in the Key stay off the lines (the picked event always shows); the scale keeps every year
     evs.forEach((e) => { if (e.id === T().sel || !hide.has(kindOf(e).id)) (byB[e.branch] = byB[e.branch] || []).push(e); });
-    scale = buildScale(evs.map((e) => e.year).concat(TL.eras.flatMap((er) => [er.from, er.to]), rows.filter((r) => r.b.fork).map((r) => r.b.fork.year)));
+    const crowd = {};
+    Object.values(byB).forEach((list) => { const n = {}; list.forEach((e) => { n[e.year] = (n[e.year] || 0) + 1; crowd[e.year] = Math.max(crowd[e.year] || 0, n[e.year]); }); });
+    scale = buildScale(evs.map((e) => e.year).concat(TL.eras.flatMap((er) => [er.from, er.to]), rows.filter((r) => r.b.fork).map((r) => r.b.fork.year)), crowd, SPREAD);
     const W = scale.width, at = {};
     colorOf = {};
     rows.forEach((r, i) => { r.y = 18 + i * ROW + ROW / 2; r.c = COLORS[i % COLORS.length]; at[r.b.id] = r; colorOf[r.b.id] = r.c; });
@@ -203,7 +211,7 @@
       (byB[r.b.id] || []).slice().sort((a, z) => key(a.year, a.seq) - key(z.year, z.seq)).forEach((e) => (years[e.year] = years[e.year] || []).push(e));
       r.dots = [];
       Object.keys(years).forEach((y) => {
-        const g = years[y], n = g.length, sp = n > 1 ? Math.min(25, 75 / (n - 1)) : 0, half = (sp * (n - 1)) / 2;
+        const g = years[y], n = g.length, sp = n > 1 ? SPREAD : 0, half = (sp * (n - 1)) / 2;
         const base = Math.max(xAt(+y), p ? r.x0 + 10 + half : -Infinity);
         g.forEach((e, i) => r.dots.push({ e, x: base - half + i * sp }));
       });
@@ -278,7 +286,8 @@
     const b = branchOf(e._from || e.branch);
     const refs = (e.refs || []).map((r) => { const t = resolve(r); return t ? `<a class="db-link" data-act="tlOpen" data-id="${esc(t.id)}">${esc(t.name)}</a>` : esc(r.slice(r.indexOf(":") + 1)); });
     const changes = (e.changes || []).map((c) => `<li>${describeChange(c).html}</li>`).join("");
-    const source = e.src && e.src !== "Homebrew" ? esc(e.src) : e.url ? `<a href="${esc(e.url)}" target="_blank" rel="noopener">Dune Wiki${e.canon ? ` (${esc(e.canon === "Original" ? "Frank Herbert's novels" : e.canon)})` : ""} ↗</a>` : e._custom ? "Your event" : "";
+    const source = e.cite ? `Sources: ${esc(e.cite)}${e.url ? `<br/><a href="${esc(e.url)}" target="_blank" rel="noopener">Read the ${esc(e.canon || "Wikipedia")} article ↗</a>` : ""}`
+      : e.src && e.src !== "Homebrew" ? esc(e.src) : e.url ? `<a href="${esc(e.url)}" target="_blank" rel="noopener">Dune Wiki${e.canon ? ` (${esc(e.canon === "Original" ? "Frank Herbert's novels" : e.canon)})` : ""} ↗</a>` : e._custom ? "Your event" : "";
     const k = kindOf(e);
     return `<div class="gx-head"><div class="gx-kicker">${swatch(b ? b.id : "")}${esc(yearText(e.year, e.circa))} · ${esc(b ? b.name : "")}</div>
         <div class="tlx-kind" title="${esc(k.text)}">${icon(k)}${esc(k.name)}</div>
@@ -404,7 +413,8 @@
     const cp = campaign(), view = branchOf(cp.branch), lim = key(cp.year, 999);
     const evs = visible(view.id).filter((e) => key(e.year, e.seq) <= lim);
     const eras = TL.eras.filter((er) => er.from <= cp.year);
-    scale = buildScale(evs.map((e) => e.year).concat(eras.flatMap((er) => [er.from, Math.min(er.to, cp.year)]), [cp.year]));
+    const crowd = {}; evs.forEach((e) => (crowd[e.year] = (crowd[e.year] || 0) + 1));
+    scale = buildScale(evs.map((e) => e.year).concat(eras.flatMap((er) => [er.from, Math.min(er.to, cp.year)]), [cp.year]), crowd, CAST_SPREAD);
     // follow Lore: the event picked there, else the year under its center line, but never past the players' year
     const sel = evs.find((e) => e.id === T().sel) || null;
     const c = T().center, focus = sel ? +sel.year : Math.min(c === "" || c == null || isNaN(+c) ? cp.year : +c, cp.year);
@@ -414,11 +424,11 @@
     // names beside the dots, in two rows above the line, skipping any that would overlap
     const lastX = [-1e9, -1e9], byYear = {};
     const dots = evs.map((e) => {
-      const y = +e.year, lane = (byYear[y] = (byYear[y] || 0) + 1) - 1, x = xAt(y);
+      const y = +e.year, lane = (byYear[y] = (byYear[y] || 0) + 1) - 1, x = xAt(y) + (lane - (crowd[y] - 1) / 2) * CAST_SPREAD;
       let label = "";
       const row = lastX[0] <= lastX[1] ? 0 : 1;
       if (e.id === (sel && sel.id) || x - lastX[row] > 230) { lastX[row] = x; label = `<span class="ct-name r${row}" style="${X(x)}">${esc(e.name)}</span>`; }
-      return `<i class="ct-dot k-${kindOf(e).id} ${e._custom ? "custom" : ""} ${sel && e.id === sel.id ? "on" : ""}" style="${X(x)};--lane:${lane}">${icon(kindOf(e))}</i>${label}`;
+      return `<i class="ct-dot k-${kindOf(e).id} ${e._custom ? "custom" : ""} ${sel && e.id === sel.id ? "on" : ""}" style="${X(x)};--lane:0">${icon(kindOf(e))}</i>${label}`;
     }).join("");
     const era = eraOf(focus);
     const card = sel ? `<div class="ct-card"><small>${icon(kindOf(sel))}${esc(yearText(sel.year, sel.circa))} · ${esc(kindOf(sel).name)}</small><h2>${esc(sel.name)}</h2>${sel.text ? `<p>${esc(sel.text)}</p>` : ""}</div>` : "";
