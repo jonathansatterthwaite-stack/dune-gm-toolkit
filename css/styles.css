@@ -647,9 +647,10 @@ body.gx-open { overflow: hidden; }
 .cg-facard { --parch: #fbf3e2; --parch-2: #f2e3c4; --parch-edge: #d9c19a; --book-red: #c0561e; --ink: #2b2118; --muted: #7a6a58;
   color: var(--ink); flex-basis: 300px; min-width: 0; min-height: 540px; padding-bottom: 0.5rem; isolation: isolate; }
 .cg-facard .cg-fac-text { position: relative; z-index: 1; }
-/* the character fills the card as a background watermark: cropped to the card, head kept at the top */
+/* the character stands behind the text as a background watermark, scaled to the card's full height (every figure
+   the same height, however wide), centred across the card */
 .cg-fac-bg { position: absolute; inset: 0; z-index: 0; border-radius: inherit; pointer-events: none;
-  background: center top / cover no-repeat; opacity: 0.2; mix-blend-mode: multiply; transition: opacity 0.2s; }
+  background: center bottom / auto 100% no-repeat; opacity: 0.2; mix-blend-mode: multiply; transition: opacity 0.2s; }
 .cg-facard:hover .cg-fac-bg, .cg-facard.on .cg-fac-bg { opacity: 0.28; }
 .cg-fac-art { position: absolute; inset: 0; z-index: 0; margin: 0; display: flex; align-items: center; justify-content: center; padding-top: 30%; border-radius: inherit; pointer-events: none; opacity: 0.35; }
 .cg-emblem { width: 150px; height: 150px; display: grid; place-items: center; transform: rotate(45deg); border: 2px solid var(--book-red); outline: 1px solid var(--parch-edge); outline-offset: 7px; background: var(--parch-2); }
