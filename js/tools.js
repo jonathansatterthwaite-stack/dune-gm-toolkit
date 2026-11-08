@@ -14,7 +14,7 @@ window.DUNE_DOMAINS = {
   },
   gm: {
     title: "GM",
-    editors: [["roller", "Dice"], ["conflict", "Conflict"], ["npcs", "NPCs"], ["scene", "Scene"], ["hooks", "Hooks"], ["reference", "Reference"], ["cast", "Player display"]],
+    editors: [["controls", "Controls"], ["roller", "Dice"], ["conflict", "Conflict"], ["npcs", "NPCs"], ["scene", "Scene"], ["hooks", "Hooks"], ["reference", "Reference"], ["cast", "Player display"]],
     owns: ["threat", "momentum", "players", "threatHouse", "history", "roller", "last", "log", "conflict", "npcs", "scene", "hook", "savedHooks", "cast"],
   },
 };

@@ -2,13 +2,13 @@
 
 A desktop app for running **Dune: Adventures in the Imperium** (Modiphius, 2d20) on Windows: characters, lore and the GM's tools in one window, plus a player display for a second screen.
 
-**The layout works like Blender's.** The window below the top bar is divided into **areas**, and each area shows one **editor**, picked from the menu at the left of its header:
+**The layout works like Blender's.** The only thing above the work is a thin strip of workspace tabs; below it the window is divided into **areas**, and each area shows one **editor**, picked from the menu at the left of its header:
 
 | Group | Editors |
 |---|---|
 | **Characters** | Characters (guided creation, the character editor and the list) |
 | **Lore** | Compendium, Timeline, Galaxy map, Worlds, House |
-| **GM** | Dice, Conflict, NPCs, Scene, Hooks, Reference, Player display |
+| **GM** | Controls (Threat, Momentum, the session's buttons and the toolkit's settings), Dice, Conflict, NPCs, Scene, Hooks, Reference, Player display |
 
 - **Resize** areas by dragging the border between them (double-click a border to even it out).
 - **Split** an area from its **⋮** menu (left and right, or top and bottom); the new area starts on an editor that isn't showing yet.
@@ -16,7 +16,9 @@ A desktop app for running **Dune: Adventures in the Imperium** (Modiphius, 2d20)
 - **Maximize** the area under the pointer with **Ctrl+Space** (or ⤢ in its header), and the same again to go back.
 - An editor shows once per workspace: picking one that's already in another area swaps the two.
 
-**Workspaces** are the tabs in the top bar, each with its own arrangement: **Session** (Dice, Scene, Conflict, NPCs, Player display, Reference), **Prep** (Compendium, NPCs, Hooks, Worlds, House), **Lore** (Galaxy map, Timeline, Compendium) and **Characters** (Characters, Compendium). Press **+** to add one (a copy of the current one), double-click a tab to rename it, and right-click it to duplicate, reset or delete it. The **Layout** menu has the same commands. Everything is saved as you go.
+**Workspaces** are the tabs in that strip, each with its own arrangement: **Session** (Controls, Dice, Scene, Conflict, NPCs, Player display, Reference), **Prep** (Compendium, NPCs, Hooks, Worlds, House), **Lore** (Galaxy map, Timeline, Compendium) and **Characters** (Characters, Compendium). Press **+** to add one (a copy of the current one), double-click a tab to rename it, and right-click it to duplicate, reset or delete it. Everything is saved as you go.
+
+**The desktop app has no menu bar or separate title bar:** the strip of tabs is the title bar (drag it to move the window, double-click it to maximize), with the window buttons at its right end. **Toolkit** in the Controls editor has the theme (Imperial or Parchment), the data folder, importing browser data and resetting workspaces. Keys: F5 reloads, F11 is full screen, Ctrl+= and Ctrl+− zoom (Ctrl+0 resets), F12 opens the developer tools.
 
 **Editors work together.** A Compendium NPC goes to the roster or the conflict with one click, a talent to the character you have open, a skill on a character sheet to the dice roller, a hazard to the scene. When the editor that should show the result isn't on screen, the toolkit switches to a workspace that has it (or, if none does, puts it in the largest area).
 
@@ -27,7 +29,7 @@ A desktop app for running **Dune: Adventures in the Imperium** (Modiphius, 2d20)
 
 With only one screen, the display opens as a window you can move and resize.
 
-**Your data** is in `Documents\Dune GM\toolkit.json`. Copy the folder to back up or move a campaign; **File › Open data folder** takes you there. The first time the toolkit runs, it combines the data of the three earlier apps (`character.json`, `lore.json` and `gm.json` in that folder) into `toolkit.json`, and leaves those files as they were.
+**Your data** is in `Documents\Dune GM\toolkit.json`. Copy the folder to back up or move a campaign; **Open data folder** (Controls › Toolkit) takes you there. The first time the toolkit runs, it combines the data of the three earlier apps (`character.json`, `lore.json` and `gm.json` in that folder) into `toolkit.json`, and leaves those files as they were.
 
 ## Building the app
 
@@ -42,13 +44,13 @@ This writes `Dune GM Toolkit.exe` to `desktop\dist\`. It's portable: no installe
 
 While working on the code, run it straight from the source with `npm start`, or open `index.html` in a browser (it then keeps its data in the browser's storage, and `display.html` is the player display). The pages are generated: edit `desktop/template.html`, then run `node tools/make-pages.js`, and bump the `?v=` numbers in the template when you change a CSS or JS file. For self-tests, `DUNE_GM_DATA=<folder>` points the app at a scratch data folder, `DUNE_EVAL=<script>` runs a script in the page and saves its result and a screenshot, and `DUNE_EVAL_DISPLAY=<script>` does the same in the player display.
 
-**Moving from the old browser version:** open `export-browser-data.html` in the browser you used, save the file, then choose **File › Import browser data…**. The website version (GitHub Pages) has been retired.
+**Moving from the old browser version:** open `export-browser-data.html` in the browser you used, save the file, then choose **Import browser data…** (Controls › Toolkit). The website version (GitHub Pages) has been retired.
 
 ## What's in it
 
 | Tab | What it does |
 |---|---|
-| **Top bar** | Shows the Threat and Momentum pools. Momentum is capped at 6, and anything over the cap is lost with a warning. It also has Undo, End scene (−1 Momentum, and Resist Defeat refreshes) and New session (sets starting Threat from the House type × number of players). |
+| **Controls** | Shows the Threat and Momentum pools. Momentum is capped at 6, and anything over the cap is lost with a warning. It also has Undo, End scene (−1 Momentum, and Resist Defeat refreshes) and New session (sets starting Threat from the House type × number of players). Under **Toolkit ▾**: the theme, the data folder, importing browser data, and resetting this or every workspace. |
 | **Dice** | Rolls a full skill test: Skill + Drive, focus crits, Difficulty 0–5+, complication range 1–5, and up to 3 bonus d20 (paid with Momentum, Threat, or a mix). It covers the Determination auto-1 and re-roll, and assistants who add 1d20 each. It shows live odds of passing, then lets you bank or spend Momentum, buy off complications, and chain a contest. NPC mode pays from Threat. Press **R** to roll. |
 | **Conflict** | Tracks each side's combatants, defeat tracks (skill + Quality of defensive assets), hits (2 + asset Quality, boosted with Momentum), and Resist Defeat (1 + Quality). It also handles Keep the Initiative, rounds, assets, complications, zones, and +3 minor NPCs at once. |
 | **NPCs** | Generates Minor, Notable and Major NPCs by the Core rules (p.137, p.240) from 35 roles, including the Power and Pawns outsiders (Face Dancer, Ginaz swordmaster, Tleilaxu, Ixian, courtier, CHOAM). It can optionally swap in one of the six Power and Pawns drives. Save NPCs to a roster, roll for them, or drop them into a conflict. |

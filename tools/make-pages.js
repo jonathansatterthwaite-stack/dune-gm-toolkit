@@ -14,8 +14,8 @@ const write = (name, html) => {
   console.log("wrote", name);
 };
 
-// the toolkit: the header with the workspaces, pools and session actions; the areas fill <main> (js/areas.js)
-const fill = { TOOL: "toolkit", TITLE: "Dune GM Toolkit", POOLS: part("gm-pools.html"), ACTIONS: part("gm-actions.html"), DIALOG: part("gm-dialog.html") };
+// the toolkit: a top strip with just the workspace tabs; the areas fill <main> (js/areas.js)
+const fill = { TOOL: "toolkit", TITLE: "Dune GM Toolkit", DIALOG: part("gm-dialog.html") };
 write("index.html", template.replace(/^<!-- TEMPLATE[^\n]*\n/, GENERATED).replace(/\{\{(\w+)\}\}/g, (m, k) => (k in fill ? fill[k] : m)));
 
 // the player display (js/cast.js): the same scripts, no header, always the dark Imperial theme

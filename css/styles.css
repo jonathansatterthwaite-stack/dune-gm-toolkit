@@ -906,19 +906,19 @@ body.cast-body { margin: 0; overflow: hidden; background: #07060a; }
 /* ===== The toolkit's layout (js/areas.js): workspaces of areas, Blender style ===== */
 html:has(body.layout), body.layout { height: 100%; }
 body.layout { display: flex; flex-direction: column; height: 100vh; overflow: hidden; margin: 0; }
-body.layout .topbar { position: relative; flex: none; flex-wrap: nowrap; gap: 0.9rem; padding: 0.35rem 0.8rem; }
-body.layout .brand { margin-right: 0; flex: none; }
-body.layout .brand-title { white-space: nowrap; }
-body.layout .pools { margin-left: auto; }
+/* the top strip: only the workspace tabs. In the desktop app it is also the title bar (drag it to move the window)
+   and the window buttons sit over its right end (env(titlebar-area-*) leaves room for them) */
+body.layout .topbar { position: relative; flex: none; height: 32px; box-sizing: border-box; display: flex; align-items: flex-end; flex-wrap: nowrap; gap: 0;
+  padding: 0 calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw)) 0 6px; background: var(--surface); box-shadow: none; -webkit-app-region: drag; app-region: drag; }
 body.layout main#main { flex: 1 1 0; min-height: 0; max-width: none; margin: 0; padding: 4px; display: flex; }
 body.layout main#main > * { flex: 1 1 0; }
 /* workspace tabs */
-.workspaces { display: flex; align-items: flex-end; gap: 2px; align-self: stretch; min-width: 0; overflow-x: auto; scrollbar-width: none; }
-.ws-tab { border: 1px solid transparent; border-bottom: 0; border-radius: 6px 6px 0 0; background: transparent; color: var(--muted); padding: 0.35rem 0.85rem; font: inherit; font-family: var(--serif); font-variant: small-caps; letter-spacing: 0.05em; font-size: 1rem; cursor: pointer; white-space: nowrap; }
+.workspaces { display: flex; align-items: flex-end; gap: 2px; height: 100%; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.ws-tab { -webkit-app-region: no-drag; app-region: no-drag; height: 27px; border: 1px solid transparent; border-bottom: 0; border-radius: 5px 5px 0 0; background: transparent; color: var(--muted); padding: 0 0.85rem; font: inherit; font-family: var(--serif); font-variant: small-caps; letter-spacing: 0.05em; font-size: 0.95rem; line-height: 1; cursor: pointer; white-space: nowrap; }
 .ws-tab:hover { color: var(--gold, var(--accent)); }
 .ws-tab.on { color: var(--gold-strong, var(--accent)); background: var(--bg); border-color: var(--line, var(--border)); }
 .ws-add { padding: 0.35rem 0.6rem; font-family: var(--sans); }
-.ws-rename { width: 9rem; font: inherit; font-family: var(--serif); padding: 0.25rem 0.5rem; margin-bottom: 2px; }
+.ws-rename { -webkit-app-region: no-drag; app-region: no-drag; width: 9rem; height: 25px; box-sizing: border-box; font: inherit; font-family: var(--serif); padding: 0 0.5rem; margin-bottom: 1px; }
 /* splits and their borders */
 .split { display: flex; min-width: 0; min-height: 0; }
 .split-row { flex-direction: row; } .split-col { flex-direction: column; }
@@ -959,3 +959,20 @@ body.resizing-col, body.resizing-col * { cursor: row-resize !important; user-sel
 .gx-host .gx-left { width: min(28%, 440px); }
 .gx-host .gx-right { width: min(34%, 430px); }
 .gx-host .gx-search { max-width: 240px; }
+/* the Controls editor: the pools and session buttons, then the toolkit's settings */
+.ctl { display: flex; flex-direction: column; gap: 0.35rem; }
+.ctl-main { display: flex; gap: 0.45rem; align-items: stretch; }
+.ctl .pools { flex: 1; display: flex; gap: 0.4rem; min-width: 0; }
+.ctl .pool { flex: 1 1 0; min-width: 0; padding: 0.15rem 0.4rem 0.25rem; }
+.ctl .pool-label { font-size: 0.66rem; }
+.ctl .pool-value { font-size: 1.55rem; }
+.ctl .pool-btn { width: 24px; height: 24px; }
+.ctl-acts { flex: none; display: flex; flex-direction: column; gap: 0.2rem; justify-content: center; }
+.ctl-acts .btn { padding-top: 0.15rem; padding-bottom: 0.15rem; }
+.ctl-foot { display: flex; align-items: center; gap: 0.5rem; }
+.ctl-info { font-size: 0.8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ctl-toggle { margin-left: auto; border: 0; background: none; padding: 0; color: var(--muted); font: inherit; font-family: var(--serif); font-variant: small-caps; letter-spacing: 0.05em; font-size: 0.85rem; cursor: pointer; }
+.ctl-toggle:hover { color: var(--gold, var(--accent)); }
+.ctl-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; }
+.ctl-more .hint { margin: 0.4rem 0 0; }
+.area[data-ed="controls"] .area-body { padding: 0.55rem 0.65rem; }

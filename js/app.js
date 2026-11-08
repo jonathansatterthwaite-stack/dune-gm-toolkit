@@ -764,6 +764,42 @@
     { t: "Reputation & fame", book: "Power and Pawns", pg: "p.79–80", h: `<ul><li>Reputation is traits. <b>Collated reputation</b>: several related traits can all apply when reputation is in play; contrary traits cancel.</li><li><b>Power differential</b>: one action spent reminding someone who holds the social high ground grants the trait ‘Power Differential’, no test needed.</li><li><b>Fake traits</b>: build a reputation you don't deserve with the Gain Reputation personal venture (Discipline, Difficulty 3) — one witnessed contrary act undoes it.</li><li><b>Making an entrance</b>: Communicate test, harder at grander gatherings; Momentum carries into the social scene.</li></ul>` },
     { t: "Sandworms & the desert", book: "Sand and Dust", pg: "p.24–26, 75–76", h: `<ul><li>A worm is <b>force majeure</b>: flee, never fight. The question is how, and what is sacrificed.</li><li>Rock outcrops, sinks and salt pans are safe from worms; open bled and spice fields are not.</li><li>Drum sand booms and summons worms. Tidal dust basins swallow the careless. Spice blows give minutes of warning (a smell of cinnamon).</li><li>Coriolis storms reach 700 km/h — treat as a deadline, not a test.</li></ul>` },
   ];
+  // the Controls editor: the pools and the session's buttons (they used to sit in the top bar), plus the
+  // toolkit's own settings and commands (they used to be in the window's menus)
+  function renderControls() {
+    const desk = window.duneDesktop;
+    const pool = (k, label, cap) => `<div class="pool pool-${k}" title="${k === "threat" ? "GM Threat pool (no maximum)" : "Group Momentum pool (max 6)"}">
+        <div class="pool-label">${label}${cap ? ` <span class="pool-cap">/ 6</span>` : ""}</div>
+        <div class="pool-row">
+          <button class="pool-btn" data-act="pool" data-k="${k}" data-d="-1" aria-label="Spend 1 ${label}">−</button>
+          <div class="pool-value" id="${k}Value">${S[k]}</div>
+          <button class="pool-btn" data-act="pool" data-k="${k}" data-d="1" aria-label="Add 1 ${label}">+</button>
+        </div>${cap ? `<div class="pips" id="momentumPips"></div>` : ""}
+      </div>`;
+    return `<div class="ctl">
+      <div class="ctl-main">
+        <div class="pools">${pool("threat", "Threat")}${pool("momentum", "Momentum", true)}</div>
+        <div class="ctl-acts">
+          <button class="btn small primary" data-act="openSession" title="Set the players and their House, and starting Threat">New session</button>
+          <button class="btn small" data-act="endScene" title="End scene: lose 1 Momentum, reset Resist Defeat">End scene</button>
+          <button class="btn small ghost" data-act="undo" id="undoBtn" title="Undo last pool change">↶ Undo</button>
+        </div>
+      </div>
+      <div class="ctl-foot"><span class="ctl-info" id="sessionInfo"></span>
+        <button class="ctl-toggle" data-act="ctlMore" aria-expanded="${!!S.ui.ctlMore}">Toolkit ${S.ui.ctlMore ? "▴" : "▾"}</button></div>
+      ${!S.ui.ctlMore ? "" : `<div class="ctl-more">
+        <div class="ctl-row">
+          <button class="btn small" data-act="theme" id="themeBtn">Parchment</button>
+          ${desk ? `<button class="btn small" data-act="ctlDataFolder" title="Documents\\Dune GM: back up or move a campaign by copying this folder">Open data folder</button>
+          <button class="btn small" data-act="ctlImport" title="Bring in data saved from the old browser version">Import browser data…</button>` : ""}
+          <button class="btn small ghost" data-act="ctlResetWs" title="Put this workspace back the way it started">Reset this workspace</button>
+          <button class="btn small ghost danger" data-act="ctlResetAll" title="Put every workspace back the way it started">Reset all workspaces</button>
+        </div>
+        <p class="hint small">Ctrl+Space maximizes the area under the pointer · F5 reloads · F11 full screen · Ctrl+= / Ctrl+− zoom</p>
+      </div>`}
+    </div>`;
+  }
+
   function renderReference() {
     const q = (S.ui.refQuery || "").toLowerCase();
     const items = REF.filter((r) => !q || (r.t + " " + r.h.replace(/<[^>]+>/g, " ")).toLowerCase().includes(q));
@@ -775,7 +811,7 @@
   // RENDER
   // =====================================================================
   function render() {
-    const views = Object.assign({ roller: renderRoller, conflict: renderConflict, npcs: renderNpcs, scene: renderScene, hooks: renderHooks, reference: renderReference }, GM.views);
+    const views = Object.assign({ roller: renderRoller, conflict: renderConflict, npcs: renderNpcs, scene: renderScene, hooks: renderHooks, reference: renderReference, controls: renderControls }, GM.views);
     // the toolkit: every editor in its own area of the current workspace (js/areas.js)
     if (GM.layout && !STORE.VIEWER) { GM.layout.render(views); renderPools(); return; }
     if (!TOOL_TABS.includes(S.tab)) S.tab = TOOL_TABS[0];
@@ -807,6 +843,11 @@
     },
     endScene,
     openSession: () => openSessionDialog(),
+    ctlMore: () => { S.ui.ctlMore = !S.ui.ctlMore; render(); },
+    ctlDataFolder: () => STORE.dataFolder(),
+    ctlImport: () => STORE.importData(),
+    ctlResetWs: () => { if (GM.layout) { const w = GM.layout.current(); GM.layout.commands.wsReset(w.id); render(); } },
+    ctlResetAll: () => { if (GM.layout && confirm("Put every workspace back the way it started? Workspaces you added are removed.")) { GM.layout.commands.resetAll(); render(); } },
     step: (el) => {
       const cur = +getPath(el.dataset.path) || 0;
       setPath(el.dataset.path, clamp(cur + +el.dataset.d, +el.dataset.min, +el.dataset.max));

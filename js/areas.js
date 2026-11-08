@@ -1,7 +1,8 @@
 // The toolkit's Blender-style layout. The window below the top bar is divided into areas; each area shows one
 // editor (Dice, Compendium, Galaxy map…), picked from the menu in its header. Areas can be split, joined, swapped
 // and resized by dragging the borders between them, and one can be maximized (Ctrl+Space). Workspaces, the tabs
-// in the top bar, each keep their own arrangement (Session, Prep, Lore, Characters, and any you add).
+// in the top strip, each keep their own arrangement (Session, Prep, Lore, Characters, and any you add). The strip
+// holds nothing else: the pools and session buttons are the Controls editor.
 //
 // The arrangement is a tree saved in S.layout: a leaf { id, ed } is an area; a split { id, dir, r, a, b } puts
 // a beside b (dir "row") or above it (dir "col"), with a taking the share r. An editor appears at most once per
@@ -22,15 +23,16 @@
   const leaf = (ed) => ({ id: uid(), ed });
   const split = (dir, r, a, b) => ({ id: uid(), dir, r, a, b });
   const PRESETS = {
-    session: () => ({ name: "Session", root: split("row", 0.34, split("col", 0.6, leaf("roller"), leaf("scene")),
+    session: () => ({ name: "Session", root: split("row", 0.34, split("col", 0.19, leaf("controls"), split("col", 0.6, leaf("roller"), leaf("scene"))),
       split("row", 0.62, split("col", 0.55, leaf("conflict"), leaf("npcs")), split("col", 0.5, leaf("cast"), leaf("reference")))) }),
     prep: () => ({ name: "Prep", root: split("row", 0.42, leaf("compendium"), split("row", 0.5, split("col", 0.55, leaf("npcs"), leaf("hooks")), split("col", 0.5, leaf("worlds"), leaf("house")))) }),
     lore: () => ({ name: "Lore", root: split("row", 0.6, leaf("starmap"), split("col", 0.42, leaf("timeline"), leaf("compendium"))) }),
     characters: () => ({ name: "Characters", root: split("row", 0.62, leaf("characters"), leaf("compendium")) }),
   };
   const fresh = (key) => Object.assign({ id: key, preset: key, max: null }, PRESETS[key]());
-  const defaults = () => ({ ws: "session", list: Object.keys(PRESETS).map(fresh) });
+  const defaults = () => ({ v: 2, ws: "session", list: Object.keys(PRESETS).map(fresh) });
   const L = () => G.S.layout;
+  const savedVersion = G.S.layout ? G.S.layout.v || 1 : 2;  // before the defaults fill in a version
   G.ensure("layout", defaults());
   const cur = () => L().list.find((w) => w.id === L().ws) || L().list[0];
 
@@ -58,6 +60,16 @@
       if (ws.max && !find(ws, ws.max)) ws.max = null;
     });
     if (!lay.list.some((w) => w.id === lay.ws)) lay.ws = lay.list[0].id;
+    // v2: the pools and session buttons left the top bar for the Controls editor; give saved layouts one
+    if (savedVersion < 2) {
+      if (!lay.list.some((w) => leaves(w.root).some((l) => l.ed === "controls"))) {
+        const ws = lay.list.find((w) => w.preset === "session") || lay.list[0];
+        // above the whole column (or side) that holds the dice, so it gets a useful height
+        const r = ws.root, at = r.ed ? r : [r.a, r.b].find((n) => leaves(n).some((l) => l.ed === "roller")) || r.a;
+        replace(ws, at.id, split("col", 0.19, leaf("controls"), at));
+      }
+      lay.v = 2;
+    }
   }
   tidy();
 
@@ -303,13 +315,6 @@
       null,
       ["Delete", () => C.wsDelete(id)],
     ], { x: e.clientX, y: e.clientY });
-  });
-  // the desktop app's Layout menu
-  if (window.duneDesktop && window.duneDesktop.onLayoutCommand) window.duneDesktop.onLayoutCommand((cmd) => {
-    const id = lastArea && find(cur(), lastArea) ? lastArea : shown(cur())[0].id;
-    ({ splitRight: () => C.split(id, "row"), splitDown: () => C.split(id, "col"), join: () => C.join(id), maximize: () => C.max(id),
-      newWorkspace: () => C.wsNew(), resetWorkspace: () => C.wsReset(L().ws), resetAll: () => C.resetAll() }[cmd] || (() => {}))();
-    R();
   });
 
   G.layout = { render, visible, showEditor, names: NAME, commands: C, current: cur };

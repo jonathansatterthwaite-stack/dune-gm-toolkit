@@ -178,7 +178,7 @@
     <div class="gx-tip" id="gxTip" hidden></div>
     <div class="gx-castcap" id="gxCastCap"></div>`;
   document.body.appendChild(root);
-  const $ = (id) => document.getElementById(id);
+  const $ = (id) => root.querySelector("#" + id);  // inside the map, even while its area is off screen
 
   // ---------- main scene ----------
   const E = { ready: false, failed: null, active: false, raf: 0, view: { theta: 1.9, phi: 0.9, r: 78000 }, goal: null, idle: 0, sprites: new Map(), hover: "", mouse: null, introDone: false };

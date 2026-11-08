@@ -1,5 +1,5 @@
 // The bridge js/store.js and the page use in the desktop app: load the toolkit's data, save it, hear it change
-// (the player display), the layout commands from the menu (js/areas.js), and run the player display (js/cast.js).
+// (the player display), color the window buttons, and run the player display (js/cast.js).
 // Nothing else from Node or Electron reaches the page.
 "use strict";
 const { contextBridge, ipcRenderer } = require("electron");
@@ -12,7 +12,8 @@ contextBridge.exposeInMainWorld("duneDesktop", {
   onChange: (cb) => ipcRenderer.on("store:changed", (e, tool, data) => cb(tool, data)),
   openDataFolder: () => ipcRenderer.send("data:openFolder"),
   importData: () => ipcRenderer.send("data:import"),
-  onLayoutCommand: (cb) => ipcRenderer.on("layout:cmd", (e, cmd) => cb(String(cmd))),
+  // the window buttons drawn in the page's top strip: their colors, to match the theme
+  setTitleBar: (color, symbolColor) => ipcRenderer.send("window:titleBar", String(color), String(symbolColor)),
   // the player display: the screens to choose from, open or close it on one, hear it being closed
   screens: () => ipcRenderer.sendSync("display:screens"),
   display: (open, screenId) => ipcRenderer.send("display:set", !!open, String(screenId || "")),

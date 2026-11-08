@@ -110,30 +110,30 @@ ipcMain.on("store:save", (e, text) => {
 ipcMain.on("data:openFolder", () => shell.openPath(DATA));
 ipcMain.on("data:import", () => importBrowserData());
 
-// ---------------- window and menu ----------------
-function menu() {
-  // the layout commands live in the page (js/areas.js); the menu passes them on
-  const area = (cmd, label, accelerator) => ({ label, accelerator, click: () => send("layout:cmd", cmd) });
-  Menu.setApplicationMenu(Menu.buildFromTemplate([
-    { label: "File", submenu: [
-      { label: "Open data folder", click: () => shell.openPath(DATA) },
-      { label: "Import browser data…", click: importBrowserData },
-      { type: "separator" }, { role: "quit" } ] },
-    { label: "Layout", submenu: [
-      area("splitRight", "Split area left and right"), area("splitDown", "Split area top and bottom"), area("join", "Join area into its neighbor"),
-      { type: "separator" }, area("maximize", "Maximize area (toggle)", "CmdOrCtrl+Space"),
-      { type: "separator" }, area("newWorkspace", "New workspace"), area("resetWorkspace", "Reset this workspace"), area("resetAll", "Reset all workspaces") ] },
-    { label: "View", submenu: [ { role: "reload" }, { role: "toggleDevTools" }, { type: "separator" },
-      { role: "resetZoom" }, { role: "zoomIn" }, { role: "zoomOut" }, { type: "separator" }, { role: "togglefullscreen" } ] },
-  ]));
+// ---------------- the window ----------------
+// No menu bar and no separate title bar: the page's top strip (the workspace tabs) is the title bar, and the window
+// buttons are drawn over its right end. What the menus did is in the Controls editor; the usual keys still work.
+const STRIP = 32;  // the strip's height, as in css/styles.css
+ipcMain.on("window:titleBar", (e, color, symbolColor) => { if (win && e.sender === win.webContents) try { win.setTitleBarOverlay({ color: String(color), symbolColor: String(symbolColor), height: STRIP }); } catch (err) {} });
+function keys(e, i) {
+  if (i.type !== "keyDown") return;
+  const ctrl = i.control || i.meta, k = String(i.key).toLowerCase(), wc = win.webContents, go = (fn) => { e.preventDefault(); fn(); };
+  if (k === "f5" || (ctrl && k === "r")) go(() => wc.reload());
+  else if (k === "f12" || (ctrl && i.shift && k === "i")) go(() => wc.toggleDevTools());
+  else if (k === "f11") go(() => win.setFullScreen(!win.isFullScreen()));
+  else if (ctrl && (k === "=" || k === "+")) go(() => wc.setZoomLevel(Math.min(4, wc.getZoomLevel() + 0.5)));
+  else if (ctrl && k === "-") go(() => wc.setZoomLevel(Math.max(-3, wc.getZoomLevel() - 0.5)));
+  else if (ctrl && k === "0") go(() => wc.setZoomLevel(0));
 }
 function createWindow() {
   win = new BrowserWindow({
     title: TITLE, width: 1600, height: 960, minWidth: 1180, minHeight: 720, backgroundColor: "#141116", show: false,
+    titleBarStyle: "hidden", titleBarOverlay: { color: "#1c181d", symbolColor: "#e2c391", height: STRIP },
     icon: path.join(__dirname, "icon.png"),
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
   win.once("ready-to-show", () => { win.maximize(); win.show(); });
+  win.webContents.on("before-input-event", keys);
   win.on("closed", () => { if (dispAlive()) disp.destroy(); });
   // links to the web (the Dune Wiki notes) open in the real browser, not inside the tool
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:/.test(url)) shell.openExternal(url); return { action: "deny" }; });
@@ -151,6 +151,6 @@ function createWindow() {
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on("second-instance", () => { if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } });
-  app.whenReady().then(() => { migrate(); menu(); createWindow(); });
+  app.whenReady().then(() => { migrate(); Menu.setApplicationMenu(null); createWindow(); });
   app.on("window-all-closed", () => app.quit());
 }
