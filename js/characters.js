@@ -323,7 +323,7 @@
       <label class="field">Notes<textarea data-bind="${base}.details.notes" rows="2">${esc(ch.details.notes)}</textarea></label>`;
     return `<div class="card ch-head">
         <div class="card-head"><h2>${esc(ch.name || "New character")}</h2><span class="badge">${esc(C.KINDS[k].name)}</span></div>
-        <div class="c-actions"><button class="btn primary" data-act="chAuto" title="Fill every empty choice with valid picks">Auto-fill the rest</button><button class="btn" data-act="chDup">Duplicate</button><button class="btn ghost danger" data-act="chDel">Delete</button></div>
+        <div class="c-actions"><button class="btn primary" data-act="chAuto" title="Fill every empty choice with valid picks">Auto-fill the rest</button><button class="btn" data-act="chDup">Duplicate</button>${G.cast ? G.cast.button("char:" + ch.id, "chCast") : ""}<button class="btn ghost danger" data-act="chDel">Delete</button></div>
         <p class="small ${issues ? "" : "ch-ready"}">${issues ? `${issues} thing${issues === 1 ? "" : "s"} left before this character is ready.` : "Ready to play — every creation rule checks out."}${isSup(k) ? ` · Bringing them in costs <b>${supCost(ch)}</b> Momentum (or Threat)${k === "supNotable" ? `; reusing costs ${Math.ceil(supCost(ch) / 2)}` : ""}.` : ""}</p>
       </div>
       ${sec(1, "Concept", v.concept, s1, true)}
@@ -396,6 +396,7 @@
   A.chNew = (el) => { const ch = blank(el.dataset.k); CS().list.unshift(ch); CS().sel = ch.id; CS().rollDrive = ""; R(); };
   A.chOpen = (el) => { CS().sel = el.dataset.id; CS().rollDrive = ""; R(); };
   A.chDel = () => { const cs = CS(), ch = cur(); if (!ch || !confirm(`Delete ${ch.name || "this character"}?`)) return; cs.list = cs.list.filter((c) => c !== ch); cs.sel = ""; R(); };
+  A.chCast = () => { const ch = cur(); if (ch && G.cast) G.cast.toggle(G.cast.fromChar(ch)); };
   A.chDup = () => { const cs = CS(), ch = cur(); const c = clone(ch); c.id = uid(); c.name = `${ch.name || "Unnamed"} (copy)`; ["focuses", "talents", "assets", "abilities"].forEach((l) => c[l].forEach((x) => (x.id = uid()))); cs.list.unshift(c); cs.sel = c.id; R(); };
   A.chAuto = () => { const ch = cur(); autofill(ch); const { issues } = validate(ch); G.toast(issues ? `Filled what I could — ${issues} item(s) still need you` : "Character complete"); R(); };
   A.chSkill = (el) => { const ch = cur(); ch.skills[el.dataset.s] = clamp(ch.skills[el.dataset.s] + +el.dataset.d, 0, 8); R(); };

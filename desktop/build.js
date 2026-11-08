@@ -23,7 +23,7 @@ const TOOLS = { character: "Dune Character Maker", lore: "Dune Lore", gm: "Dune 
         productName: title,
         copyright: "Personal use",
         directories: { output: "desktop/dist", buildResources: "desktop" },
-        files: ["package.json", "desktop/main.js", "desktop/preload.js", "desktop/icon.png", "character.html", "lore.html", "gm.html",
+        files: ["package.json", "desktop/main.js", "desktop/preload.js", "desktop/icon.png", "character.html", "lore.html", "gm.html", "display.html",
           "js/**/*", "css/**/*", "img/**/*"],
         extraMetadata: { duneTool: tool, main: "desktop/main.js" },
         asar: true,

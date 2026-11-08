@@ -6,8 +6,10 @@
 // thing runs on localStorage: one key per tool and one inbox key per tool, with "storage" events for live updates.
 window.DUNE_STORE = (function () {
   const TOOLS = window.DUNE_TOOLS, TOOL = window.DUNE_TOOL, NAMES = Object.keys(TOOLS);
+  // the player display is a viewer: it reads every tool's data and saves nothing
+  const VIEWER = !TOOLS[TOOL], CFG = TOOLS[TOOL] || (window.DUNE_VIEWERS || {})[TOOL];
   const desk = window.duneDesktop || null;
-  const OWN = TOOLS[TOOL].owns.concat(["tab", "ui"]);
+  const OWN = VIEWER ? [] : TOOLS[TOOL].owns.concat(["tab", "ui"]);
   const ownerOf = (key) => NAMES.find((t) => TOOLS[t].owns.includes(key)) || null;
   const pick = (obj, keys) => { const o = {}; keys.forEach((k) => { if (obj && k in obj) o[k] = obj[k]; }); return o; };
   const LS = (t) => "duneGM.tool." + t, INBOX = (t) => "duneGM.inbox." + t;
@@ -39,6 +41,7 @@ window.DUNE_STORE = (function () {
     return Object.assign(S, pick(files[TOOL], OWN));
   }
   function save(S) {
+    if (VIEWER) return;
     const own = JSON.stringify(pick(S, OWN));
     if (desk) desk.save(own);
     else try { localStorage.setItem(LS(TOOL), own); } catch (e) { /* storage unavailable: keep working in memory */ }
@@ -76,6 +79,8 @@ window.DUNE_STORE = (function () {
     if (desk) return desk.openTool(t);
     window.open(t + ".html", "dune-" + t);
   }
-  return { TOOL, TOOLS, OWN, ownerOf, owns: (key) => OWN.includes(key), load, save, onExternal, send, onMessage, open, desktop: !!desk,
-    dataFolder: () => desk && desk.openDataFolder(), importData: () => desk && desk.importData() };
+  return { TOOL, TOOLS, CFG, VIEWER, OWN, ownerOf, owns: (key) => OWN.includes(key), load, save, onExternal, send, onMessage, open, desktop: !!desk,
+    dataFolder: () => desk && desk.openDataFolder(), importData: () => desk && desk.importData(),
+    // start another tool in the background if it isn't running, so a request to it is carried out now
+    wake: (t) => desk && desk.wake && desk.wake(t) };
 })();

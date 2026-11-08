@@ -4,6 +4,8 @@
   const G = window.GM, P = window.Planets, GD = window.DUNE_GALAXY;
   const { esc, uid, clamp } = G;
   const HAS_THREE = typeof window.THREE !== "undefined";
+  // on the player display (js/cast.js) the map has no controls: it follows what the GM picks in Lore
+  const CAST = G.tool === "display";
   const clone = (o) => JSON.parse(JSON.stringify(o));
   const rnd = () => Math.floor(Math.random() * 1e9);
   const SOL = [-26000, 18, 0];
@@ -162,6 +164,7 @@
         <button class="gx-btn" data-act="gxView" data-v="imperium" title="The Imperium around Sol">Imperium</button>
         <span class="gx-toggles" id="gxToggles"></span>
         <button class="gx-btn" data-act="gxAddSystem">+ System</button>
+        <button class="gx-btn" data-act="gxCast" id="gxCastBtn" title="Put the galaxy map on the player display; it follows what you pick here">Show to players</button>
         <button class="gx-btn" data-act="gxFull" title="Toggle browser full screen">⛶</button>
         <button class="gx-btn gx-exit" data-act="gxExit">Exit map ✕</button>
       </div>
@@ -172,7 +175,8 @@
     </aside>
     <aside class="gx-panel gx-right" id="gxRight" hidden></aside>
     <div class="gx-bottom"><span id="gxScale"></span><span class="gx-time" id="gxTime" hidden></span><span class="gx-hint" id="gxHint">Drag to orbit · right-drag to pan · scroll to zoom · click a star · double-click to open its system</span></div>
-    <div class="gx-tip" id="gxTip" hidden></div>`;
+    <div class="gx-tip" id="gxTip" hidden></div>
+    <div class="gx-castcap" id="gxCastCap"></div>`;
   document.body.appendChild(root);
   const $ = (id) => document.getElementById(id);
 
@@ -459,7 +463,8 @@
       V.r = Math.max(Math.exp(logR), E.target.distanceTo(g.target) * 1.15);
       if (g.t >= 1) { V.r = g.r; E.goal = null; }
     }
-    if (E.idle > 6 && !gx.selSystem) V.theta += dt * (V.r > GALAXY_LIMIT ? 0.012 : 0.02);
+    if (CAST) V.theta += dt * (E.mode === "system" ? 0.025 : V.r > GALAXY_LIMIT ? 0.012 : gx.selSystem ? 0.04 : 0.02);  // a slow orbit, always
+    else if (E.idle > 6 && !gx.selSystem) V.theta += dt * (V.r > GALAXY_LIMIT ? 0.012 : 0.02);
     const t = E.target;
     E.camera.position.set(t.x + V.r * Math.sin(V.phi) * Math.sin(V.theta), t.y + V.r * Math.cos(V.phi), t.z + V.r * Math.sin(V.phi) * Math.cos(V.theta));
     E.camera.lookAt(t);
@@ -567,6 +572,7 @@
     else disposeSystem();
     buildSystem(s);
     E.mode = "system";
+    if (!CAST) GX().inSystem = s.id;  // the player display follows into the system
     E.follow = null;
     E.target.set(0, 0, 0); E.view.phi = 1.12; E.view.r = E.sys.overR * 4; E.goal = null;
     if (focusId && E.sys.bodies.some((b) => b.id === focusId)) followBody(focusId);
@@ -577,6 +583,7 @@
     if (E.mode !== "system") return;
     disposeSystem();
     E.mode = "galaxy"; E.follow = null; E.goal = null;
+    if (!CAST) GX().inSystem = "";
     if (E.galCam) { Object.assign(E.view, E.galCam.view); E.target.copy(E.galCam.target); }
     const gx = GX();
     if (gx.selPlanet && gx.selPlanet.startsWith("virt:")) gx.selPlanet = (planetsOf(gx.selSystem)[0] || {}).id || "";
@@ -817,6 +824,7 @@
   }
 
   function renderPanels() {
+    if (CAST) return;
     const gx = GX();
     const s = gx.selSystem && sysById(gx.selSystem);
     if (gx.selSystem && !s) { gx.selSystem = ""; gx.selPlanet = ""; }
@@ -912,7 +920,11 @@
     });
   }
   function hide() { root.hidden = true; document.body.classList.remove("gx-open"); E.active = false; Viewer.active = false; }
-  G.afterRender.push((tab) => { if (tab === "starmap") show(); else { lastTab = tab; if (!root.hidden) hide(); } });
+  G.afterRender.push((tab) => {
+    if (CAST) return;  // the display shows and hides the map itself
+    if (tab === "starmap") show(); else { lastTab = tab; if (!root.hidden) hide(); }
+    const cb = $("gxCastBtn"); if (cb) { const on = !!(G.cast && G.cast.state().open && G.cast.state().bg === "starmap"); cb.classList.toggle("on", on); cb.textContent = on ? "On the player display" : "Show to players"; }
+  });
   G.views.starmap = () => `<div class="card"><h2>Known Universe</h2><p>The galaxy map opens full screen.</p><button class="btn primary" data-act="gxOpen">Open the map</button></div>`;
 
   document.addEventListener("keydown", (e) => {
@@ -949,7 +961,8 @@
   A.gxOpen = () => { G.S.tab = "starmap"; R(); };
   A.gxExit = () => { leaveSystem(); if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); G.S.tab = lastTab === "starmap" ? "worlds" : lastTab; R(); };
   A.gxFull = () => { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); else document.documentElement.requestFullscreen().catch(() => G.toast("Full screen isn't available here")); };
-  A.gxView = (el) => { leaveSystem(); GX().selSystem = ""; GX().selPlanet = ""; if (el.dataset.v === "galaxy") viewGalaxy(); else viewImperium(); R(); };
+  A.gxView = (el) => { leaveSystem(); const gx = GX(); gx.selSystem = ""; gx.selPlanet = ""; gx.camView = { v: el.dataset.v, n: ((gx.camView && gx.camView.n) || 0) + 1 }; if (el.dataset.v === "galaxy") viewGalaxy(); else viewImperium(); R(); };
+  A.gxCast = () => { if (!G.cast) return; const st = G.cast.state(); G.cast.bg(st.open && st.bg === "starmap" ? "none" : "starmap"); };
   A.gxEnter = () => { const gx = GX(); if (!gx.selSystem) return; enterSystem(gx.selSystem); R(); };
   A.gxLeave = () => { const gx = GX(); leaveSystem(); const s = sysById(gx.selSystem); if (s) focusSystem(s); R(); };
   A.gxBody = (el) => selectBody(el.dataset.id);
@@ -1036,6 +1049,36 @@
   // The Compendium links planets to the map by name.
   const planetByName = (name) => GX().planets.find((x) => x.name.toLowerCase() === String(name).toLowerCase());
   G.hasStarmapPlanet = (name) => !!planetByName(name);
+
+  // ---------- the player display: follow the GM's picks in Lore (selection, system view, Galaxy/Imperium buttons) ----------
+  const seen = { sys: null, planet: null, inSys: null, cam: null };
+  function castFollow() {
+    if (!E.ready) return;
+    const gx = GX();
+    syncSystems(); syncSystemScene();
+    const inSys = gx.inSystem && sysById(gx.inSystem) ? gx.inSystem : "";
+    const cam = gx.camView ? gx.camView.n : 0;
+    if (inSys !== seen.inSys) {
+      if (inSys) enterSystem(inSys, gx.selPlanet);
+      else if (seen.inSys !== null) { leaveSystem(); const s = sysById(gx.selSystem); if (s) focusSystem(s); else viewImperium(); }
+    } else if (inSys) {
+      if (gx.selPlanet !== seen.planet) { if (sysBody(gx.selPlanet)) followBody(gx.selPlanet); else { E.follow = null; flyTo(new THREE.Vector3(), E.sys.overR); } }
+    } else if (seen.cam !== null && cam !== seen.cam) { if (gx.camView.v === "galaxy") viewGalaxy(); else viewImperium(); }
+    else if (seen.sys !== null && gx.selSystem !== seen.sys) { const s = sysById(gx.selSystem); if (s) focusSystem(s); else flyTo(E.target, Math.max(E.view.r, 260)); }
+    Object.assign(seen, { sys: gx.selSystem, planet: gx.selPlanet, inSys, cam });
+    // the name of what the players are looking at
+    const s = sysById(gx.selSystem), p = gx.selPlanet && anyPlanet(gx.selPlanet);
+    const cap = $("gxCastCap");
+    if (!s) { cap.innerHTML = ""; return; }
+    const pl = p && (inSys || (!String(p.id).startsWith("virt:") && p.systemId === s.id)) ? p : null;
+    cap.innerHTML = pl ? `<small>${esc(s.name)} system</small><b>${esc(pl.name)}</b>${pl.allegiance ? `<span>${esc(pl.allegiance)}</span>` : ""}`
+      : `<small>Star system</small><b>${esc(s.name)}</b>${planetsOf(s.id).length ? `<span>${planetsOf(s.id).map((x) => esc(x.name)).join(" · ")}</span>` : ""}`;
+  }
+  if (CAST) G.galaxyCast = {
+    show() { root.classList.add("gx-cast"); if (root.hidden) { E.introDone = seen.inSys !== null; show(); } castFollow(); },
+    hide() { if (!root.hidden) hide(); },
+    follow: castFollow,
+  };
   G.showOnStarmap = (name) => {
     const p = planetByName(name); if (!p) return false;
     const gx = GX(), s = sysById(p.systemId);

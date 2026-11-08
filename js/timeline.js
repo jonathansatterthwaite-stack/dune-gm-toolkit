@@ -7,7 +7,7 @@
 (function () {
   const G = window.GM, DB = window.DUNE_DB, TL = window.DUNE_TIMELINE;
   const { esc, uid } = G;
-  G.ensure("timeline", { now: { branch: "novels", year: "" }, view: "novels", branches: [], events: [], form: null, newBranch: { name: "", parent: "", year: "" }, sel: null, center: "", follow: true });
+  G.ensure("timeline", { now: { branch: "novels", year: "" }, view: "novels", branches: [], events: [], form: null, newBranch: { name: "", parent: "", year: "" }, sel: null, center: "", follow: true, campaign: { branch: "", year: "" } });
   const T = () => G.S.timeline;
 
   // ---------------- engine ----------------
@@ -61,7 +61,10 @@
   }
   const describeChange = (c) => { const t = resolve(c.ref); const label = t ? t.name : c.ref.slice(c.ref.indexOf(":") + 1);
     return { t, html: `${t ? `<a class="db-link" data-act="tlOpen" data-id="${esc(t.id)}">${esc(label)}</a>` : esc(label)}: <b>${esc(c.field)}</b> → ${c.value === "" ? "<i>none</i>" : esc(c.value)}` }; };
-  G.timeline = { branches, branchOf, visible, asOf, eventsFor, yearText, eraOf, nowSet, describeChange, now: () => T().now, stateAt: (b, y) => stateAt(b, y) };
+  // the players' year: the player display never shows an event after it (default: the RPG's setting, 10190 AG)
+  const campaign = () => { const c = T().campaign || {}, set = String(c.year == null ? "" : c.year).trim() !== "" && !isNaN(+c.year);
+    return { branch: branchOf(c.branch) ? c.branch : "novels", year: set ? +c.year : 10190, set }; };
+  G.timeline = { campaign, branches, branchOf, visible, asOf, eventsFor, yearText, eraOf, nowSet, describeChange, now: () => T().now, stateAt: (b, y) => stateAt(b, y) };
 
   // ---------------- view ----------------
   const editable = (b) => b && b.custom;
@@ -216,7 +219,8 @@
         <div class="card-head"><div>
             ${editable(view) ? `<input class="c-name" data-bind="timeline.branches.#${esc(view.id)}.name" value="${esc(view.name)}" aria-label="Timeline name"/>` : `<h2>${esc(view.name)}</h2>`}
             <div class="muted small">${view.fork ? `Splits from ${esc((branchOf(view.parent) || {}).name || "?")} after ${esc(yearText(view.fork.year))}; earlier events are shared` : "The root timeline"} · ${evs.length} events</div></div>
-          <div class="mini">${G.select("timeline.view", branches().map((b) => ({ v: b.id, l: (b.parent ? "↳ " : "") + b.name })))}<button class="btn primary small" data-act="tlNewEvent">Add event</button></div></div>
+          <div class="mini">${G.select("timeline.view", branches().map((b) => ({ v: b.id, l: (b.parent ? "↳ " : "") + b.name })))}<button class="btn primary small" data-act="tlNewEvent">Add event</button>
+            ${castButtons()}</div></div>
         ${strip(view, evs)}
       </div>
       ${form()}
@@ -238,6 +242,43 @@
       </div>
     </div>`;
   };
+
+  // the players' year and the player display, from the strip's header
+  function castButtons() {
+    const cp = campaign(), b = branchOf(cp.branch), st = G.cast ? G.cast.state() : null, on = !!(st && st.open && st.bg === "timeline");
+    return `<button class="btn small ghost" data-act="tlCampaign" title="The player display shows ${esc(b.name)} up to here and nothing later. Click to set it to the year under the center line, in this timeline">Players' year: ${esc(yearText(cp.year))}${cp.branch !== "novels" ? ` · ${esc(b.name)}` : ""}</button>
+      ${G.cast ? `<button class="btn small ${on ? "primary" : ""}" data-act="tlCast" title="Put the timeline on the player display. It glides to the event or year you pick here, never past the players' year">${on ? "On the player display" : "Show to players"}</button>` : ""}`;
+  }
+
+  // ---------------- the player display's timeline (js/cast.js): the campaign's timeline up to the players' year ----------------
+  function castView() {
+    const cp = campaign(), view = branchOf(cp.branch), lim = key(cp.year, 999);
+    const evs = visible(view.id).filter((e) => key(e.year, e.seq) <= lim);
+    const eras = TL.eras.filter((er) => er.from <= cp.year);
+    scale = buildScale(evs.map((e) => e.year).concat(eras.flatMap((er) => [er.from, Math.min(er.to, cp.year)]), [cp.year]));
+    // follow Lore: the event picked there, else the year under its center line, but never past the players' year
+    const sel = evs.find((e) => e.id === T().sel) || null;
+    const c = T().center, focus = sel ? +sel.year : Math.min(c === "" || c == null || isNaN(+c) ? cp.year : +c, cp.year);
+    const X = (x) => `left:${x.toFixed(1)}px`;
+    const bands = eras.map((er, i) => { const x0 = xAt(er.from), x1 = xAt(Math.min(er.to, cp.year)); return `<div class="ct-band b${i % 2}" style="${X(x0)};width:${Math.max(0, x1 - x0).toFixed(1)}px"><span>${esc(er.name)}</span></div>`; }).join("");
+    const ticks = scale.stops.map((p) => `<div class="ct-tick" style="${X(p.x)}"><span>${esc(yearText(p.y))}</span></div>`).join("");
+    // names beside the dots, in two rows above the line, skipping any that would overlap
+    const lastX = [-1e9, -1e9], byYear = {};
+    const dots = evs.map((e) => {
+      const y = +e.year, lane = (byYear[y] = (byYear[y] || 0) + 1) - 1, x = xAt(y);
+      let label = "";
+      const row = lastX[0] <= lastX[1] ? 0 : 1;
+      if (e.id === (sel && sel.id) || x - lastX[row] > 230) { lastX[row] = x; label = `<span class="ct-name r${row}" style="${X(x)}">${esc(e.name)}</span>`; }
+      return `<i class="ct-dot ${e._custom ? "custom" : ""} ${sel && e.id === sel.id ? "on" : ""}" style="${X(x)};--lane:${lane}"></i>${label}`;
+    }).join("");
+    const era = eraOf(focus);
+    const card = sel ? `<div class="ct-card"><small>${esc(yearText(sel.year, sel.circa))}</small><h2>${esc(sel.name)}</h2>${sel.text ? `<p>${esc(sel.text)}</p>` : ""}</div>` : "";
+    return { x: xAt(focus), html: `<div class="ct">
+        <div class="ct-head"><small>${esc(view.name)}</small><b>${esc(yearText(focus))}</b>${era ? `<span>${esc(era.name)}</span>` : ""}</div>
+        <div class="ct-strip"><div class="ct-center"></div><div class="ct-track" id="castTrack" style="width:${scale.width.toFixed(0)}px">${bands}<div class="ct-axis"></div>${ticks}${dots}</div></div>
+        ${card}</div>` };
+  }
+  G.timeline.castView = castView;
 
   // ---------------- scrolling: the center line sets the year ----------------
   let saveTimer = 0, lastYear = null;
@@ -319,6 +360,8 @@
   A.tlSel = (el) => { if (G.S.tab !== "timeline") return; select(el.dataset.id); };
   A.tlStep = (el) => step(+el.dataset.dir);
   A.tlJump = (el) => centerOn(+el.dataset.y, true);
+  A.tlCampaign = () => { T().campaign = { branch: T().view, year: centerYear() }; G.toast(`Players' year set to ${yearText(centerYear())} in ${(branchOf(T().view) || {}).name}`); R(); };
+  A.tlCast = () => { if (!G.cast) return; const st = G.cast.state(); G.cast.bg(st.open && st.bg === "timeline" ? "none" : "timeline"); };
   A.tlFollow = () => { T().follow = !T().follow; T().now = T().follow ? { branch: T().view, year: centerYear() } : { branch: T().view, year: "" }; R(); };
   A.tlOpen = (el) => { G.S.tab = "compendium"; A.dbGo(el); window.scrollTo(0, 0); };
   A.tlClearNow = () => { T().now.year = ""; T().follow = false; R(); };

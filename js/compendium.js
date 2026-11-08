@@ -166,6 +166,7 @@
     if (r._t === "traits") out.push(b("dbSceneTrait", "Add to scene", " primary"));
     if (r._t === "planets" && G.hasStarmapPlanet && G.hasStarmapPlanet(r.name)) out.push(b("dbStarmap", "Show on galaxy map", " primary"));
     if (r._t === "houses") out.push(b("dbSceneTrait", "Add House to scene"));
+    if (G.cast) out.push(G.cast.button(r.id, "dbCast", `data-id="${esc(r.id)}"`));
     out.push(b("dbCopy", "Copy as text"));
     if (r._custom) out.push(b("dbEdit", "Edit"), b("dbDelete", "Delete", " ghost danger"));
     else out.push(b("dbClone", "Copy to homebrew", " ghost"));
@@ -345,7 +346,7 @@
     const tier = n.kind === "Named" ? "major" : "notable";
     const focuses = Object.values(n.focuses || {}).flat();
     const abilities = (n.talents || []).map((t) => { const d = findRow("talents", t); return { name: t, text: d ? d.text : "" }; });
-    return { id: uid(), name: n.name, tier, role: n.title || (n.kind === "Archetype" ? n.name : n.faction || "NPC"), traits: (n.traits || []).slice(0, 4), skills: Object.assign({}, n.skills),
+    return { id: uid(), dbId: n.id, name: n.name, tier, role: n.title || (n.kind === "Archetype" ? n.name : n.faction || "NPC"), traits: (n.traits || []).slice(0, 4), skills: Object.assign({}, n.skills),
       drives: Object.assign({}, n.drives), driveNames: D.DRIVES.slice(), statements: {}, focuses, abilities,
       notes: [n.text, n.assets && n.assets.length ? "Assets: " + n.assets.join(", ") : "", "Source: " + n.src].filter(Boolean).join("\n") };
   }
@@ -384,6 +385,24 @@ ${r.text}`;
   A.dbNpcCreator = (el) => { const n = rowFrom(el); if (n) G.remote("character", "dbNpcCreator", { id: n.id }, { focus: true, label: "Opening " + n.name + " in the Character maker" }); };
   A.dbGiveAsset = (el) => { const r = rowFrom(el); if (r) G.remote("character", "dbGiveAsset", { id: r.id }); };
   A.dbGiveTalent = (el) => { const r = rowFrom(el); if (r) G.remote("character", "dbGiveTalent", { id: r.id }); };
+  // a card for the player display: the entry as it stands in the GM's year, with its art. NPC summaries can hold
+  // secrets, so an NPC's card has only their name, title, faction and status
+  function castCard(r) {
+    if (r._t === "art") return { id: r.id, kind: "art", title: r.name, img: r.file };
+    if (G.timeline) r = G.timeline.asOf(r);
+    const arts = artFor(r), a = arts.find((x) => x.kind === "character") || arts[0];
+    const F = {
+      houses: [["Rank", r.rank], ["Homeworld", r.homeworld], ["Colors", r.colors], ["Motto", r.motto]],
+      planets: [["Star system", r.system], ["Ruling House", r.house], ["Held for them by", r.vassal], ["Habitability", r.habitable]],
+      npcs: [["Faction", r.faction], ["Status", r.status]],
+      assets: [["Type", r.cat], ["Keywords", (r.kw || []).join(", ")]],
+      organizations: [["Kind", r.kind]],
+    }[r._t] || [];
+    return { id: r.id, kind: r._t, title: r.name, sub: r._t === "npcs" ? r.title || "" : meta(r._t).title, img: a ? a.file : "",
+      facts: F.filter(([, v]) => v != null && v !== ""), text: r._t === "npcs" ? "" : r.text || "" };
+  }
+  A.dbCast = (el) => { const r = rowFrom(el); if (r && G.cast) G.cast.toggle(castCard(r)); };
+  G.dbRow = getRow; G.artFor = artFor;
   A.dbSceneTrait = (el) => { const r = rowFrom(el); if (r) G.addSceneTrait(r.name, "trait"); };
   const IN = G.inbox, rowOf = (p) => getRow(p.id);
   if (G.tool === "gm") Object.assign(IN, {

@@ -47,7 +47,7 @@
   }
 
   // saved data comes from js/store.js: this tool's own keys plus read-only copies of the other tools' data
-  const STORE = window.DUNE_STORE, TOOL = STORE.TOOL, TOOL_TABS = STORE.TOOLS[TOOL].tabs.map((t) => t[0]);
+  const STORE = window.DUNE_STORE, TOOL = STORE.TOOL, TOOL_TABS = STORE.CFG.tabs.map((t) => t[0]);
   function load() {
     try {
       const saved = STORE.load();
@@ -327,7 +327,7 @@
     const result = Dice.rollTest(rollerOpts());
     const npc = r.npcId ? findNpc(r.npcId) : null;
     const title = r.label || `${npc ? npc.name + ": " : ""}${r.skillName} + ${r.driveName}`;
-    S.last = { side: r.side, result, difficulty: r.difficulty, comp: r.comp, focus: r.focus, skillName: r.skillName, title, spent: 0, banked: false, compsBought: 0, contest: r.contest, contestPaid: false, sel: [] };
+    S.last = { at: Date.now(), side: r.side, result, difficulty: r.difficulty, comp: r.comp, focus: r.focus, skillName: r.skillName, title, spent: 0, banked: false, compsBought: 0, contest: r.contest, contestPaid: false, sel: [] };
     r.contest = false;
     const vals = result.dice.map((d) => d.value).concat(result.assists.map((d) => `a${d.value}`)).join(", ");
     log(`${title} — [${vals}] → ${result.successes} vs D${S.last.difficulty}: ${result.passed ? `PASS${result.momentum ? ` (+${result.momentum} Momentum)` : ""}` : `FAIL by ${result.shortfall}`}${result.complications ? `, ${result.complications} complication(s)` : ""}`, r.side);
@@ -347,6 +347,7 @@
     Object.assign(res, Dice.evaluate({ dice: res.dice, assists: res.assists, difficulty: L.difficulty }));
     L.sel = [];
     L.spent = 0;
+    L.at = Date.now(); L.rerolled = true;
     log(`${L.title} — re-rolled → ${res.successes} vs D${L.difficulty}: ${res.passed ? "PASS" : "FAIL"}`, L.side);
     save();
     render();
@@ -596,6 +597,7 @@
         <button class="btn" data-act="npcToConflict" data-npc="${n.id}">Add to conflict</button>
         <button class="btn" data-act="rollNpc" data-npc="${n.id}">Roll</button>
         <button class="btn" data-act="chFromNpc" data-npc="${n.id}" title="Edit this NPC in the character creator">Open in creator</button>
+        ${isPreview || !GM.cast ? "" : GM.cast.button("npc:" + n.id, "castNpc", `data-npc="${n.id}"`)}
         ${isPreview ? "" : `<button class="btn ghost danger" data-act="rmNpc" data-npc="${n.id}">Delete</button>`}
       </div>
     </div>`;
@@ -1066,7 +1068,7 @@
       opts = opts || {};
       if (tool === TOOL) { const fn = GM.inbox[type]; if (fn) { fn(payload || {}); save(); render(); } return; }
       STORE.send(tool, { type, payload: payload || {}, focus: !!opts.focus });
-      if (opts.focus) STORE.open(tool);
+      if (opts.focus) STORE.open(tool); else if (opts.wake) STORE.wake(tool);
       if (!opts.quiet) toast(opts.label || "Sent to " + STORE.TOOLS[tool].short);
     },
     // handlers for requests from other tools, by type (each tool registers the ones for data it owns)
@@ -1081,7 +1083,7 @@
     // conflict helpers for other modules
     addCombatant(o) { GM.remote("gm", "addCombatant", o, { label: "Sent " + (o.name || "a combatant") + " to the conflict in GM tools" }); },
     conflictSkill: () => CONFLICT_TYPES[S.conflict.type].skill,
-    focusSkill, findNpc: (id) => findNpc(id),
+    focusSkill, findNpc: (id) => findNpc(id), tierName, effReq, conflictName: (k) => (CONFLICT_TYPES[k] || { name: k }).name,
     start: () => {
       // requests from the other tools, and their data changing underneath this one
       STORE.onMessage((m) => {

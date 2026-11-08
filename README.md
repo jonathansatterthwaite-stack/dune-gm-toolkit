@@ -6,11 +6,18 @@ Three desktop apps for **Dune: Adventures in the Imperium** (Modiphius, 2d20), b
 |---|---|---|
 | **Dune Character Maker** | Guided character creation, the character editor and the character list | Characters |
 | **Dune Lore** | Compendium, Timeline, Galaxy map, Worlds, House | The database's homebrew, timelines, the galaxy map, generated worlds, House management |
-| **Dune GM Tools** | Dice, Conflict, NPCs, Scene, Hooks, Reference | Threat and Momentum, rolls and the log, the conflict, the NPC roster, the scene, saved hooks |
+| **Dune GM Tools** | Dice, Conflict, NPCs, Scene, Hooks, Reference, Player display | Threat and Momentum, rolls and the log, the conflict, the NPC roster, the scene, saved hooks, what the player display shows |
 
 **They work together.** All three read each other's data live: Lore's Compendium can give a talent to the character open in the Character maker, GM tools see the characters and the timeline. But each app edits only its own data. When one app needs a change in another (Lore's **Save to NPC roster**, a character's **Roll** button, a hazard sent to the scene), it sends a request and the owning app makes the change. It opens or comes to the front if needed, and the request waits until it is running. Switch apps with the buttons in the header or **Tools** in the menu (Ctrl+1, 2, 3).
 
-**Your data** is in `Documents\Dune GM\`: `character.json`, `lore.json` and `gm.json`, plus an `inbox` folder for requests between the apps. Copy the folder to back up or move a campaign; **File › Open data folder** takes you there.
+**The player display** is a second window for the players, on a projector, TV or second monitor. GM Tools opens it full screen on the screen you pick (**Player display** tab), and you choose what's on it:
+- **A background:** a plain Imperial screen, the **galaxy map**, or the **timeline**. The map follows Lore's map: pick a system or world there, or open a solar system, and the display flies to it, slowly orbiting, with the name in large type. The timeline shows your campaign's timeline and glides to the event or year you pick in Lore's timeline, but never past the **players' year** (set it from the timeline's header; it starts at the RPG's 10190 AG), so nothing later is spoiled.
+- **Cards** on top, up to four at once: **Show to players** on a Compendium entry (with its art), a character in the Character maker, an NPC card, or a **handout** you type in. An NPC's card shows only their name, title and faction, never stats, notes or the book's summary.
+- **Overlays:** Momentum and Threat, the scene's traits and goal tasks, the conflict's zones with who stands in each, and each dice roll as it's made (player rolls only, unless you include NPC rolls). **Black out** hides it all at once.
+
+Asking for the display from Lore or the Character maker starts GM Tools in the background if it isn't running. With only one screen, the display opens as a window you can move and resize.
+
+**Your data** is in `Documents\Dune GM\`: `character.json`, `lore.json` and `gm.json`, plus an `inbox` folder for requests between the apps and a `running` folder that marks which apps are open. Copy the folder to back up or move a campaign; **File › Open data folder** takes you there.
 
 ## Building the apps
 
@@ -23,7 +30,7 @@ npm run build
 
 This writes `Dune Character Maker.exe`, `Dune Lore.exe` and `Dune GM Tools.exe` to `desktop\dist\`. They're portable: no installer, and they can run from any folder, but keep the three together so each can open the others. If you've built the local book text and art (below), it's included in the exes, so they're for your own use; don't share them.
 
-While working on the code, run an app straight from the source with `npm run character`, `npm run lore` or `npm run gm`, or open `character.html`, `lore.html` or `gm.html` in a browser (they then share their data through the browser's storage). The pages are generated: edit `desktop/template.html` or `js/tools.js`, then run `node tools/make-pages.js`.
+While working on the code, run an app straight from the source with `npm run character`, `npm run lore` or `npm run gm`, or open `character.html`, `lore.html` or `gm.html` in a browser (they then share their data through the browser's storage, and `display.html` is the player display). The pages are generated: edit `desktop/template.html` or `js/tools.js`, then run `node tools/make-pages.js`, and bump the `?v=` numbers in the template when you change a CSS or JS file. For self-tests, `DUNE_GM_DATA=<folder>` points an app at a scratch data folder, `DUNE_EVAL=<script>` runs a script in the app's page, and `DUNE_EVAL_DISPLAY=<script>` runs one in the player display and saves a screenshot of it.
 
 **Moving from the old browser version:** open `export-browser-data.html` in the browser you used, save the file, then choose **File › Import browser data…** in any of the apps. The website version (GitHub Pages) has been retired.
 
@@ -51,8 +58,9 @@ Rules numbers (costs, bands, dice), keywords and stat blocks follow the books, w
 
 ## Files
 
-- `index.html` is the page itself. When you change a CSS or JS file, bump the `?v=` number so browsers load the new copy.
-- `css/styles.css` handles the look, with a light and a dark theme that follow your OS setting.
+- `character.html`, `lore.html`, `gm.html` and `display.html` are generated from `desktop/template.html` by `tools/make-pages.js`. `index.html` is a page linking to them.
+- `css/styles.css` handles the look: the dark Imperial theme by default, with a light Parchment theme.
+- `js/cast.js` is the player display: the GM Tools' **Player display** tab, the requests other apps send to show something, and the display window itself (`display.html`), which reads all three apps' data live and saves nothing.
 - `js/data.js` holds the Core rules tables, NPC roles, names and hook tables.
 - `js/expansions.js` holds the expansion data: House management costs and tables, planet, sietch and desert tables, court drives and outsider roles.
 - `js/dice.js` is the dice engine and odds calculator. It doesn't touch the page.
@@ -68,7 +76,7 @@ Rules numbers (costs, bands, dice), keywords and stat blocks follow the books, w
 - `js/db.js` is the rules database engine (`window.DUNE_DB`): tables, ids, search and views over data the other tools already hold.
 - `js/db/*.js` are the database tables: `assets-core.js` and `assets-x.js` (assets), `npcs-core.js` and `npcs-x.js` (NPC stat blocks), `houses.js`, `planets.js`, and `rules.js` (House creation, roles, enmity, factions, traits, focuses, drives and the views). `adventures.js` holds the published adventures: the Agents of Dune starter set (with its pregenerated characters, cards and folios), the Masters of Dune campaign and the GM Toolkit. It adds their NPCs, assets (including Masters of Dune's spaceships and stations), House Nagara and its worlds, the cards' traits and complications, and an **Adventures** table of acts, chapters, campaign rules, intrigues and locations, each listing its characters. `lore.js` holds lore notes from the Dune novels, summarized from the [Dune Wiki](https://dune.fandom.com/). They appear in the Compendium under **In the novels**, labeled by canon (Frank Herbert's novels, the Brian Herbert and Kevin J. Anderson novels, or the non-canon Dune Encyclopedia), and are flagged where they differ from the RPG books. They never change the RPG's own values.
 - `css/imperial.css` is the Imperial theme, the default look: smoky charcoal with gold line work. It has pointed-arch frames for character art, stepped corner pieces on cards, a pointed frame on the open tab, eight-point stars for the timeline's events and dividers, and blue-and-gold cloud accents. All of it is original SVG line work, generated by `python tools/gen-imperial.py`. The **Parchment** button in the top bar switches to the original light theme; `js/theme.js` remembers the choice.
-- `desktop/main.js` and `desktop/preload.js` are the Electron shell: one codebase that runs as any of the three apps, the shared data files, the request inboxes and the menus. `desktop/build.js` builds the three exes.
+- `desktop/main.js` and `desktop/preload.js` are the Electron shell: one codebase that runs as any of the three apps, the shared data files, the request inboxes, the menus, and the player display's window on the screen the GM picks. `desktop/build.js` builds the three exes.
 - `js/tools.js` says which tabs and which saved data belong to each app; `js/store.js` loads and saves through it, and `GM.remote` sends requests to the owning app.
 - `js/compendium.js` is the Compendium tab: browsing, search, links between entries, hand-offs to the other tools, homebrew and export.
 - `js/timeline.js` is the Timeline tab and the timeline engine: which events a branch sees, and an entry "as of" a year. `js/db/timeline.js` holds the eras, the built-in timelines and their events. The novels' years come from the Dune Wiki's timeline of Frank Herbert's novels, and events note where the RPG books give a different year. Your own timelines and events are saved with the rest of the app's state.
