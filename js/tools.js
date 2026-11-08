@@ -4,7 +4,7 @@
 window.DUNE_DOMAINS = {
   character: {
     title: "Characters",
-    editors: [["characters", "Characters"]],
+    editors: [["characters", "Characters"], ["sheet", "Character sheet"]],
     owns: ["chars"],
   },
   lore: {

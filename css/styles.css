@@ -477,6 +477,9 @@ body.gx-open { overflow: hidden; }
 .ch-dot { position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--threat); }
 .ch-layout { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 1rem; align-items: start; }
 .ch-layout > section:last-child { position: sticky; top: 92px; }
+.ch-layout.solo { grid-template-columns: minmax(0, 1fr); }  /* the sheet has its own area */
+.ch-pick { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.6rem; }
+.ch-pick .ch-chip { padding: 0.25rem 0.6rem; }
 @container area (max-width: 960px) { .ch-layout { grid-template-columns: minmax(0, 1fr); } .ch-layout > section:last-child { position: static; } }
 .ch-step { padding: 0.6rem 1rem; }
 .ch-step > summary { display: flex; align-items: center; gap: 0.6rem; cursor: pointer; list-style: none; font-family: var(--serif); font-size: 1.05rem; }
@@ -497,6 +500,7 @@ body.gx-open { overflow: hidden; }
 .ch-st { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .ch-st td { padding: 0.2rem 0.3rem; border-bottom: 1px dashed var(--border); vertical-align: top; }
 .ch-st td.v { font-family: var(--serif); font-weight: 700; font-size: 1.05rem; text-align: center; width: 2.4rem; }
+.ch-st td:first-child { white-space: nowrap; }  /* skill and drive names stay whole in a narrow sheet */
 .ch-st tr[data-act] { cursor: pointer; }
 .ch-st tr[data-act]:hover { background: var(--crit-soft); }
 .ch-ul { margin: 0.2rem 0; padding-left: 1.1rem; font-size: 0.9rem; }

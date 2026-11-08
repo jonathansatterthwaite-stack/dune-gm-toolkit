@@ -365,10 +365,23 @@
     </div>`;
   }
 
+  // The sheet can have an area of its own (the Character sheet editor), e.g. beside the Dice in Session. While it's
+  // in the workspace, the Characters editor is the roster and the step-by-step editor.
+  const docked = () => !!(G.layout && G.visible("sheet"));
   G.views.characters = () => {
     if (CS().wiz && G.chargen && CS().list.some((c) => c.id === CS().wiz.id)) return G.chargen.view();
     const ch = cur();
+    if (docked()) return `${roster()}${ch ? `<div class="ch-layout solo"><section>${editor(ch)}</section></div>` : ""}`;
     return `${roster()}${ch ? `<div class="ch-layout"><section>${editor(ch)}</section><section>${sidebar(ch)}</section></div>` : ""}`;
+  };
+  // the Character sheet editor: a row to switch character (players first), then the sheet with its roll controls
+  G.views.sheet = () => {
+    const cs = CS(), ch = cur();
+    const order = (c) => (isPC(c.kind) ? 0 : isSup(c.kind) ? 1 : 2);
+    const list = cs.list.slice().sort((a, b) => order(a) - order(b));
+    if (!list.length) return `<div class="empty">No characters yet. Make one in the Characters editor.</div>`;
+    return `<div class="ch-pick" role="toolbar" aria-label="Character">${list.map((c) => `<button class="ch-chip small ${c.id === cs.sel ? "on" : ""}" data-act="chOpen" data-id="${c.id}" title="${esc(C.KINDS[c.kind].name)}${c.archetype ? " · " + esc(c.archetype) : ""}"><b>${esc(c.name || "Unnamed")}</b></button>`).join("")}</div>
+      ${ch ? sidebar(ch) : `<div class="hint">Pick a character above to see their sheet.</div>`}`;
   };
 
   // React to archetype / faction / kind changes.

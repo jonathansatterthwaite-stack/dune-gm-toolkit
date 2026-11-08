@@ -27,9 +27,11 @@
   // the Compendium's search and list, with the picked entry in an area of its own beside (row) or below (col) it
   const withEntry = (dir, r, cp) => split(dir, r, cp || leaf("compendium"), leaf("entry"));
   const ENTRY_AT = { lore: ["row", 0.5], prep: ["col", 0.45], characters: ["col", 0.45] };
+  // the character sheet above the column it joins (in Session: above the Player display and Reference)
+  const withSheet = (n) => split("col", 0.48, leaf("sheet"), n);
   const PRESETS = {
     session: () => ({ name: "Session", root: split("row", 0.34, split("col", 0.19, leaf("controls"), split("col", 0.6, leaf("roller"), leaf("scene"))),
-      split("row", 0.62, split("col", 0.55, leaf("conflict"), leaf("npcs")), split("col", 0.5, leaf("cast"), leaf("reference")))) }),
+      split("row", 0.62, split("col", 0.55, leaf("conflict"), leaf("npcs")), withSheet(split("col", 0.45, leaf("cast"), leaf("reference"))))) }),
     prep: () => ({ name: "Prep", root: split("row", 0.42, withEntry(...ENTRY_AT.prep), split("row", 0.5, split("col", 0.55, leaf("npcs"), leaf("hooks")), split("col", 0.5, leaf("worlds"), leaf("house")))) }),
     lore: () => ({ name: "Lore", root: split("col", 0.52, split("row", 0.54, leaf("starmap"), withEntry(...ENTRY_AT.lore)), timelineTrio()) }),
     // the map with its two panels as editors of their own: the world above, the system's details below
@@ -37,9 +39,9 @@
     characters: () => ({ name: "Characters", root: split("row", 0.6, leaf("characters"), withEntry(...ENTRY_AT.characters)) }),
   };
   const fresh = (key) => Object.assign({ id: key, preset: key, max: null }, PRESETS[key]());
-  const defaults = () => ({ v: 5, ws: "session", list: Object.keys(PRESETS).map(fresh) });
+  const defaults = () => ({ v: 6, ws: "session", list: Object.keys(PRESETS).map(fresh) });
   const L = () => G.S.layout;
-  const savedVersion = G.S.layout ? G.S.layout.v || 1 : 5;  // before the defaults fill in a version
+  const savedVersion = G.S.layout ? G.S.layout.v || 1 : 6;  // before the defaults fill in a version
   G.ensure("layout", defaults());
   const cur = () => L().list.find((w) => w.id === L().ws) || L().list[0];
 
@@ -103,6 +105,15 @@
         lay.list.splice(at < 0 ? lay.list.length : at + 1, 0, fresh("galaxy"));
       }
       lay.v = 5;
+    }
+    // v6: the character sheet became an editor (Character sheet); Session gets it above the Player display and Reference
+    if (savedVersion < 6) {
+      lay.list.filter((w) => w.preset === "session" && !leaves(w.root).some((l) => l.ed === "sheet")).forEach((ws) => {
+        const ref = leaves(ws.root).find((l) => l.ed === "reference"); if (!ref) return;
+        const p = parentOf(ws, ref.id), at = p && p.a.ed && p.b.ed ? p : ref;  // Reference with its neighbor, or alone
+        replace(ws, at.id, withSheet(at));
+      });
+      lay.v = 6;
     }
   }
   tidy();
