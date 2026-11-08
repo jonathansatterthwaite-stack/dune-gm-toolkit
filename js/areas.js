@@ -26,7 +26,7 @@
     session: () => ({ name: "Session", root: split("row", 0.34, split("col", 0.19, leaf("controls"), split("col", 0.6, leaf("roller"), leaf("scene"))),
       split("row", 0.62, split("col", 0.55, leaf("conflict"), leaf("npcs")), split("col", 0.5, leaf("cast"), leaf("reference")))) }),
     prep: () => ({ name: "Prep", root: split("row", 0.42, leaf("compendium"), split("row", 0.5, split("col", 0.55, leaf("npcs"), leaf("hooks")), split("col", 0.5, leaf("worlds"), leaf("house")))) }),
-    lore: () => ({ name: "Lore", root: split("row", 0.6, leaf("starmap"), split("col", 0.42, leaf("timeline"), leaf("compendium"))) }),
+    lore: () => ({ name: "Lore", root: split("col", 0.58, split("row", 0.64, leaf("starmap"), leaf("compendium")), leaf("timeline")) }),
     characters: () => ({ name: "Characters", root: split("row", 0.62, leaf("characters"), leaf("compendium")) }),
   };
   const fresh = (key) => Object.assign({ id: key, preset: key, max: null }, PRESETS[key]());
@@ -143,7 +143,9 @@
     const ws = cur(), list = shown(ws);
     const key = shapeKey(ws);
     if (key !== builtKey) {
-      main.replaceChildren(ws.max ? areaFor(ws, list[0]) : build(ws, ws.root));
+      // a maximized area fills the window: drop the share of its split it was drawn with last
+      if (ws.max) { const el = areaFor(ws, list[0]); el.style.flex = "1 1 0"; main.replaceChildren(el); }
+      else main.replaceChildren(build(ws, ws.root));
       builtKey = key;
     } else list.forEach((l) => areaFor(ws, l));
     sizes(ws);
