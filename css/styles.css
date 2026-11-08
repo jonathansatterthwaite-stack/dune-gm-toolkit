@@ -503,8 +503,15 @@ body.gx-open { overflow: hidden; }
 
 /* ---------- Compendium (rules database) ---------- */
 .db-layout { display: grid; grid-template-columns: minmax(180px, 230px) minmax(0, 5fr) minmax(0, 6fr); gap: 1rem; align-items: start; }
+.db-layout.no-detail { grid-template-columns: minmax(180px, 230px) minmax(0, 1fr); }  /* the entry has its own area */
 .db-side, .db-detail { position: sticky; top: 92px; max-height: calc(100vh - 110px); overflow-y: auto; }
 .db-search { width: 100%; margin-bottom: 0.6rem; }
+.db-tsel { display: none; }
+/* a narrow Compendium: the tables are a dropdown instead of a long list of buttons */
+@container area (max-width: 520px) {
+  .db-side .db-tsel { display: block; flex: 1 1 100%; width: 100%; }
+  .db-side .db-tab, .db-side .db-group { display: none; }
+}
 .db-group { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; margin: 0.7rem 0 0.2rem; }
 .db-tab { display: flex; justify-content: space-between; gap: 0.4rem; width: 100%; text-align: left; background: none; border: 0; border-radius: 6px; padding: 0.3rem 0.5rem; color: var(--ink); font: inherit; font-size: 0.9rem; cursor: pointer; }
 .db-tab span { color: var(--muted); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
@@ -553,7 +560,7 @@ body.gx-open { overflow: hidden; }
 .db-form textarea { min-height: 5rem; }
 @container area (max-width: 1200px) { .db-layout { grid-template-columns: minmax(170px, 210px) minmax(0, 1fr); } .db-detail { grid-column: 1 / -1; position: static; max-height: none; } }
 @container area (max-width: 760px) {
-  .db-layout { grid-template-columns: minmax(0, 1fr); }
+  .db-layout, .db-layout.no-detail { grid-template-columns: minmax(0, 1fr); }
   .db-side { position: static; max-height: none; display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; }
   .db-side .db-search, .db-side .field, .db-io { flex: 1 1 100%; margin: 0.2rem 0 0; }
   .db-group { display: none; }
@@ -1041,6 +1048,7 @@ body.resizing-col, body.resizing-col * { cursor: row-resize !important; user-sel
 .area-menu hr { border: 0; border-top: 1px solid var(--line-faint, var(--border)); margin: 0.25rem 0.2rem; }
 /* editors that assumed the whole window */
 .area-body .db-side, .area-body .db-detail { top: 0; max-height: calc(var(--area-h, 80vh) - 1.5rem); }
+.area[data-ed="entry"] .db-detail { position: static; max-height: none; overflow: visible; }  /* the area scrolls instead */
 .area-body .ch-layout > section:last-child { top: 0; }
 .area-body .cg-nav { margin-left: -0.75rem; margin-right: -0.75rem; padding-left: 0.75rem; padding-right: 0.75rem; }
 .area[data-ed="starmap"] .area-body { padding: 0; overflow: hidden; container-type: normal; }  /* no containment: the map's tooltip is fixed to the window */

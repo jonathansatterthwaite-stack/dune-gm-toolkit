@@ -583,7 +583,7 @@
   A.tlCampaign = () => { T().campaign = { branch: T().view, year: centerYear() }; G.toast(`Players' year set to ${yearText(centerYear())} in ${(branchOf(T().view) || {}).name}`); R(); };
   A.tlCast = () => { if (!G.cast) return; const st = G.cast.state(); G.cast.bg(st.open && st.bg === "timeline" ? "none" : "timeline"); };
   A.tlFollow = () => { T().follow = !T().follow; T().now = T().follow ? { branch: T().view, year: centerYear() } : { branch: T().view, year: "" }; R(); };
-  A.tlOpen = (el) => { G.S.tab = "compendium"; A.dbGo(el); G.areaTop("compendium"); };
+  A.tlOpen = (el) => { const ed = G.entryEditor ? G.entryEditor() : "compendium"; G.S.tab = ed; A.dbGo(el); G.areaTop(ed); };
   A.tlClearNow = () => { T().now.year = ""; T().follow = false; R(); };
   A.tlFork = (el) => {
     const e = findEvent(el.dataset.id); if (!e) return;

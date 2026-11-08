@@ -9,6 +9,10 @@
   G.ensure("db", { table: "assets", q: "", book: "", facet: "", sel: "", custom: {}, draft: null, limit: 200, deep: false });
   const ST = () => G.S.db;
   const R = () => { G.save(); G.render(); };
+  // The picked entry can have an area of its own (the Entry editor). While it's in the workspace, the Compendium
+  // is the search and the list, and links from other editors (the timeline's) open their entry there.
+  const docked = () => !!(G.layout && G.visible("entry"));
+  const entryEditor = () => (docked() ? "entry" : "compendium");
 
   // ---- data access: book rows + homebrew rows
   const custom = (t) => (ST().custom[t] || []).map((r) => Object.assign({}, r, { _t: t, _custom: true, book: "Homebrew", src: r.src || "Homebrew" }));
@@ -302,6 +306,7 @@
     const side = `<section class="card db-side">
         <input type="search" class="db-search" placeholder="Search everything…" data-bind="db.q" data-live="1" value="${esc(s.q)}" aria-label="Search the database"/>
         <button class="db-tab ${s.table === "*" ? "on" : ""}" data-act="dbTable" data-t="*">All tables <span>${total}</span></button>
+        <select class="db-tsel" data-bind="db.table" aria-label="Table">${`<option value="*" ${s.table === "*" ? "selected" : ""}>All tables (${total})</option>`}${Object.entries(groups).map(([g, ts]) => `<optgroup label="${esc(g)}">${ts.map((t) => `<option value="${t}" ${s.table === t ? "selected" : ""}>${esc(meta(t).title)} (${rowsOf(t).length})</option>`).join("")}</optgroup>`).join("")}</select>
         ${Object.entries(groups).map(([g, ts]) => `<div class="db-group">${esc(g)}</div>${ts.map((t) => `<button class="db-tab ${s.table === t ? "on" : ""}" data-act="dbTable" data-t="${t}">${esc(meta(t).title)} <span>${rowsOf(t).length}</span></button>`).join("")}`).join("")}
         ${fullState === "ready" ? `<label class="db-deep"><input type="checkbox" data-bind="db.deep" ${s.deep ? "checked" : ""}/> Search the book text too</label>`
           : fullState === "missing" ? `<p class="hint small">For the books' full text, run <code>node tools/build-fulltext.js</code> once (it reads your PDFs in [rulebooks]/), then reload.</p>`
@@ -333,12 +338,15 @@
         <div class="db-rows">${shown.map((r) => `<button class="db-row ${s.sel === r.id ? "on" : ""}" data-act="dbSel" data-id="${esc(r.id)}"><span class="n">${esc(r.name)}</span>${colsHTML(r)}${tag(r)}</button>`).join("") || `<div class="hint">${s.table === "*" && !s.q ? "Search to see results from every table." : "Nothing matches."}</div>`}</div>
         ${rows.length > shown.length ? `<button class="btn small" data-act="dbMore" style="margin-top:0.5rem">Show ${Math.min(200, rows.length - shown.length)} more</button>` : ""}
       </section>`;
-    const detail = `<section class="card db-detail">${s.draft ? editorHTML(s.draft) : detailHTML(getRow(s.sel))}</section>`;
-    return `${asOf}<div class="db-layout">${side}${listCard}${detail}</div>`;
+    if (docked()) return `${asOf}<div class="db-layout no-detail">${side}${listCard}</div>`;
+    return `${asOf}<div class="db-layout">${side}${listCard}${entryCard()}</div>`;
   };
+  const entryCard = () => `<section class="card db-detail">${ST().draft ? editorHTML(ST().draft) : detailHTML(getRow(ST().sel))}</section>`;
+  // the Entry editor: the picked entry (or the homebrew form) on its own
+  G.views.entry = () => entryCard();
 
   // ---- reset facet / paging when the table or filters change
-  G.onChange.push((b) => { if (b === "db.book") ST().limit = 200; });
+  G.onChange.push((b) => { if (b === "db.book") ST().limit = 200; if (b === "db.table") Object.assign(ST(), { facet: "", limit: 200, draft: null }); });
   G.onInput.push((b) => { if (b === "db.q") ST().limit = 200; });
 
   // ---- converters to the other tools
@@ -374,8 +382,9 @@ ${r.text}`;
   const A = G.actions;
   const rowFrom = (el) => getRow(el.dataset.id);
   A.dbTable = (el) => { const s = ST(); s.table = el.dataset.t; s.facet = ""; s.limit = 200; s.draft = null; R(); };
-  A.dbSel = (el) => { ST().sel = el.dataset.id; ST().draft = null; R(); const d = document.querySelector(".db-detail"); if (d && d.getBoundingClientRect().top > (d.closest(".area-body") || document.body).getBoundingClientRect().bottom - 40) d.scrollIntoView({ behavior: "smooth", block: "start" }); };
-  A.dbGo = (el) => { const r = rowFrom(el); if (!r) return; const s = ST(); s.sel = r.id; s.draft = null; if (s.table !== "*" && s.table !== r._t) { s.table = r._t; s.facet = ""; s.q = ""; } R(); };
+  A.dbSel = (el) => { ST().sel = el.dataset.id; ST().draft = null; R(); if (docked()) { G.areaTop("entry"); return; } const d = document.querySelector(".db-detail"); if (d && d.getBoundingClientRect().top > (d.closest(".area-body") || document.body).getBoundingClientRect().bottom - 40) d.scrollIntoView({ behavior: "smooth", block: "start" }); };
+  A.dbGo = (el) => { const r = rowFrom(el); if (!r) return; const s = ST(); s.sel = r.id; s.draft = null; if (s.table !== "*" && s.table !== r._t) { s.table = r._t; s.facet = ""; s.q = ""; } R(); if (docked()) G.areaTop("entry"); };
+  G.entryEditor = entryEditor;
   A.dbMore = () => { ST().limit += 200; R(); };
 
   // These change data the GM tools or the Character maker own, so they are sent there as requests (GM.remote);

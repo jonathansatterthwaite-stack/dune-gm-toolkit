@@ -24,17 +24,20 @@
   const split = (dir, r, a, b) => ({ id: uid(), dir, r, a, b });
   // the timeline flanked by its two panels as editors of their own: the year's state on the left, the event on the right
   const timelineTrio = (tl) => split("row", 0.22, leaf("universe"), split("row", 0.7, tl || leaf("timeline"), leaf("event")));
+  // the Compendium's search and list, with the picked entry in an area of its own beside (row) or below (col) it
+  const withEntry = (dir, r, cp) => split(dir, r, cp || leaf("compendium"), leaf("entry"));
+  const ENTRY_AT = { lore: ["row", 0.5], prep: ["col", 0.45], characters: ["col", 0.45] };
   const PRESETS = {
     session: () => ({ name: "Session", root: split("row", 0.34, split("col", 0.19, leaf("controls"), split("col", 0.6, leaf("roller"), leaf("scene"))),
       split("row", 0.62, split("col", 0.55, leaf("conflict"), leaf("npcs")), split("col", 0.5, leaf("cast"), leaf("reference")))) }),
-    prep: () => ({ name: "Prep", root: split("row", 0.42, leaf("compendium"), split("row", 0.5, split("col", 0.55, leaf("npcs"), leaf("hooks")), split("col", 0.5, leaf("worlds"), leaf("house")))) }),
-    lore: () => ({ name: "Lore", root: split("col", 0.52, split("row", 0.64, leaf("starmap"), leaf("compendium")), timelineTrio()) }),
-    characters: () => ({ name: "Characters", root: split("row", 0.62, leaf("characters"), leaf("compendium")) }),
+    prep: () => ({ name: "Prep", root: split("row", 0.42, withEntry(...ENTRY_AT.prep), split("row", 0.5, split("col", 0.55, leaf("npcs"), leaf("hooks")), split("col", 0.5, leaf("worlds"), leaf("house")))) }),
+    lore: () => ({ name: "Lore", root: split("col", 0.52, split("row", 0.54, leaf("starmap"), withEntry(...ENTRY_AT.lore)), timelineTrio()) }),
+    characters: () => ({ name: "Characters", root: split("row", 0.6, leaf("characters"), withEntry(...ENTRY_AT.characters)) }),
   };
   const fresh = (key) => Object.assign({ id: key, preset: key, max: null }, PRESETS[key]());
-  const defaults = () => ({ v: 3, ws: "session", list: Object.keys(PRESETS).map(fresh) });
+  const defaults = () => ({ v: 4, ws: "session", list: Object.keys(PRESETS).map(fresh) });
   const L = () => G.S.layout;
-  const savedVersion = G.S.layout ? G.S.layout.v || 1 : 3;  // before the defaults fill in a version
+  const savedVersion = G.S.layout ? G.S.layout.v || 1 : 4;  // before the defaults fill in a version
   G.ensure("layout", defaults());
   const cur = () => L().list.find((w) => w.id === L().ws) || L().list[0];
 
@@ -79,6 +82,17 @@
         if (tl && !leaves(ws.root).some((l) => l.ed === "universe" || l.ed === "event")) replace(ws, tl.id, timelineTrio(tl));
       });
       lay.v = 3;
+    }
+    // v4: the Compendium's entry became an editor of its own (Entry); the built-in workspaces get it beside the Compendium
+    if (savedVersion < 4) {
+      lay.list.filter((w) => ENTRY_AT[w.preset]).forEach((ws) => {
+        const cp = leaves(ws.root).find((l) => l.ed === "compendium");
+        if (!cp || leaves(ws.root).some((l) => l.ed === "entry")) return;
+        const p = parentOf(ws, cp.id);
+        replace(ws, cp.id, withEntry(...ENTRY_AT[ws.preset], cp));
+        if (ws.preset === "lore" && p && p.dir === "row" && p.b.ed === undefined && p.r > 0.54) p.r = 0.54;  // the map gives up some room
+      });
+      lay.v = 4;
     }
   }
   tidy();

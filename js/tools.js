@@ -9,7 +9,7 @@ window.DUNE_DOMAINS = {
   },
   lore: {
     title: "Lore",
-    editors: [["compendium", "Compendium"], ["timeline", "Timeline"], ["universe", "Known universe"], ["event", "Event details"], ["starmap", "Galaxy map"], ["worlds", "Worlds"], ["house", "House"]],
+    editors: [["compendium", "Compendium"], ["entry", "Entry"], ["timeline", "Timeline"], ["universe", "Known universe"], ["event", "Event details"], ["starmap", "Galaxy map"], ["worlds", "Worlds"], ["house", "House"]],
     owns: ["db", "timeline", "galaxy", "worlds", "house"],
   },
   gm: {
