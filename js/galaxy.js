@@ -178,7 +178,11 @@
     <div class="gx-tip" id="gxTip" hidden></div>
     <div class="gx-castcap" id="gxCastCap"></div>`;
   document.body.appendChild(root);
-  const $ = (id) => root.querySelector("#" + id);  // inside the map, even while its area is off screen
+  // The two panels can move out of the map into areas of their own (the World view and System details editors),
+  // so lookups search them too: by id, inside the map or its panels, even while their areas are off screen.
+  const LEFT = root.querySelector("#gxLeft"), RIGHT = root.querySelector("#gxRight");
+  const inMap = (sel) => root.querySelector(sel) || LEFT.querySelector(sel) || RIGHT.querySelector(sel);
+  const $ = (id) => (id === "gxLeft" ? LEFT : id === "gxRight" ? RIGHT : inMap("#" + id));
 
   // ---------- main scene ----------
   const E = { ready: false, failed: null, active: false, raf: 0, view: { theta: 1.9, phi: 0.9, r: 78000 }, goal: null, idle: 0, sprites: new Map(), hover: "", mouse: null, introDone: false };
@@ -923,6 +927,11 @@
   // In the toolkit the map lives in the Galaxy map area: moved into it when it shows, paused when it doesn't.
   G.afterLayout.push((eds) => {
     if (CAST) return;  // the display shows and hides the map itself
+    // each panel goes into its own editor's area while that shows, else back over the map
+    [[LEFT, "world"], [RIGHT, "system"]].forEach(([panel, ed]) => {
+      const dock = eds.includes(ed) && document.querySelector(`.area[data-ed="${ed}"] .gx-dock`), home = dock || root;
+      if (panel.parentNode !== home) { if (dock) dock.appendChild(panel); else root.insertBefore(panel, root.querySelector(".gx-bottom")); }
+    });
     const host = document.querySelector('.area[data-ed="starmap"] .gx-host');
     if (eds.includes("starmap") && host) { if (root.parentNode !== host) host.appendChild(root); show(); }
     else if (!root.hidden) hide();
@@ -930,10 +939,15 @@
   });
   G.views.starmap = () => `<div class="gx-host"></div>`;
   G.views.starmap.keep = true;  // drawn once; the map keeps its own canvas and panels
+  // World view and System details: the map's two panels, each in an area of its own (moved in by afterLayout)
+  const dock = (ed, hint) => { const v = () => `<div class="gx gx-dock gx-dock-${ed}"><p class="gx-dock-empty">${hint}</p></div>`; v.keep = true; return v; };
+  G.views.world = dock("world", "Pick a world on the Galaxy map to see it here.");
+  G.views.system = dock("system", "Pick a star system on the Galaxy map to see its worlds here.");
 
   document.addEventListener("keydown", (e) => {
     if (root.hidden || e.key !== "Escape") return;
-    if (!CAST && !root.matches(":hover") && !root.contains(document.activeElement)) return;  // only when working in the map
+    const here = (el) => el.matches(":hover") || el.contains(document.activeElement);
+    if (!CAST && !here(root) && !here(LEFT) && !here(RIGHT)) return;  // only when working in the map or its panels
     if (document.activeElement && document.activeElement.id === "gxSearch" && $("gxResults").innerHTML) { hideResults(); return; }
     if (E.mode === "system") A.gxLeave(); else if (GX().selSystem) A.gxClose(); else A.gxExit();
   });
@@ -941,7 +955,7 @@
   // Live edits (sliders, colours, text) without re-rendering panels.
   G.onInput.push((bind, el) => {
     if (!bind.startsWith("galaxy.")) return;
-    const out = root.querySelector(`[data-val="${bind}"]`);
+    const out = inMap(`[data-val="${bind}"]`);
     if (out) out.textContent = el.value;
     if (bind.startsWith("galaxy.planets.#")) {
       const p = planetById(bind.split(".")[2].slice(1));

@@ -1058,6 +1058,14 @@ body.resizing-col, body.resizing-col * { cursor: row-resize !important; user-sel
 .gx-host .gx-left { width: min(28%, 440px); }
 .gx-host .gx-right { width: min(34%, 430px); }
 .gx-host .gx-search { max-width: 240px; }
+/* World view and System details: the map's panels, each filling an area of its own */
+.area[data-ed="world"] .area-body, .area[data-ed="system"] .area-body { padding: 0; overflow: hidden; }
+.gx.gx-dock { position: absolute; inset: 0; z-index: 0; background: radial-gradient(ellipse 90% 60% at 50% 110%, rgba(42, 80, 166, 0.16), transparent 70%), #020308; }
+.gx-dock-empty { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 1rem; text-align: center; color: var(--gx-dim); }
+.gx.gx-dock > .gx-panel { inset: 0; top: 0; bottom: 0; left: 0; right: 0; width: auto; height: auto; border: 0; border-radius: 0; box-shadow: none; backdrop-filter: none; background: #020308; }
+.gx.gx-dock .gx-left .gx-sub { display: block; }
+.gx.gx-dock .gx-left .gx-cycle { display: flex; }
+.gx.gx-dock .gx-left .gx-caption h2 { font-size: 24px; }
 /* the Controls editor: the pools and session buttons, then the toolkit's settings */
 .ctl { display: flex; flex-direction: column; gap: 0.35rem; }
 .ctl-main { display: flex; gap: 0.45rem; align-items: stretch; }

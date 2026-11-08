@@ -32,12 +32,14 @@
       split("row", 0.62, split("col", 0.55, leaf("conflict"), leaf("npcs")), split("col", 0.5, leaf("cast"), leaf("reference")))) }),
     prep: () => ({ name: "Prep", root: split("row", 0.42, withEntry(...ENTRY_AT.prep), split("row", 0.5, split("col", 0.55, leaf("npcs"), leaf("hooks")), split("col", 0.5, leaf("worlds"), leaf("house")))) }),
     lore: () => ({ name: "Lore", root: split("col", 0.52, split("row", 0.54, leaf("starmap"), withEntry(...ENTRY_AT.lore)), timelineTrio()) }),
+    // the map with its two panels as editors of their own: the world above, the system's details below
+    galaxy: () => ({ name: "Galaxy", root: split("row", 0.68, leaf("starmap"), split("col", 0.42, leaf("world"), leaf("system"))) }),
     characters: () => ({ name: "Characters", root: split("row", 0.6, leaf("characters"), withEntry(...ENTRY_AT.characters)) }),
   };
   const fresh = (key) => Object.assign({ id: key, preset: key, max: null }, PRESETS[key]());
-  const defaults = () => ({ v: 4, ws: "session", list: Object.keys(PRESETS).map(fresh) });
+  const defaults = () => ({ v: 5, ws: "session", list: Object.keys(PRESETS).map(fresh) });
   const L = () => G.S.layout;
-  const savedVersion = G.S.layout ? G.S.layout.v || 1 : 4;  // before the defaults fill in a version
+  const savedVersion = G.S.layout ? G.S.layout.v || 1 : 5;  // before the defaults fill in a version
   G.ensure("layout", defaults());
   const cur = () => L().list.find((w) => w.id === L().ws) || L().list[0];
 
@@ -93,6 +95,14 @@
         if (ws.preset === "lore" && p && p.dir === "row" && p.b.ed === undefined && p.r > 0.54) p.r = 0.54;  // the map gives up some room
       });
       lay.v = 4;
+    }
+    // v5: the galaxy map's panels became editors (World view, System details), shown in a new Galaxy workspace
+    if (savedVersion < 5) {
+      if (!lay.list.some((w) => w.preset === "galaxy" || w.id === "galaxy")) {
+        const at = lay.list.findIndex((w) => w.preset === "lore");
+        lay.list.splice(at < 0 ? lay.list.length : at + 1, 0, fresh("galaxy"));
+      }
+      lay.v = 5;
     }
   }
   tidy();
