@@ -143,8 +143,9 @@
     "Ginaz Swordmaster": "A full Swordmaster of Ginaz — among the finest blades in the Imperium.",
     "CHOAM Agent": "Serves two masters: the House, and the great trade combine that enriches it.",
   };
-  // Tall entries like the book's faction pages: text above, the character standing below.
-  // The art is extracted locally from your PDFs (tools/extract-art.py); elsewhere a drawn emblem stands in.
+  // Tall entries like the book's faction pages, on the book's parchment, with the character as a faint watermark
+  // behind the text. The art is extracted locally from your PDFs (tools/extract-art.py); without it (the public
+  // site) a drawn emblem stands in. House Agent and Ginaz Cadet have no portrait of their own.
   function facCard(f, c) {
     const on = c.faction === f.name, title = f.none ? "House Agent" : f.name;
     const art = window.DUNE_ART && window.DUNE_ART.factions[f.name];
@@ -160,9 +161,8 @@
           <li><b>Mandatory Talents:</b> ${f.none ? "None" : `${f.anyOf ? "One of " : ""}${esc(f.mandatory.join(", "))}${f.group ? `; ${esc(f.group.rule.replace(/^Master of Battle plus /, "plus "))}` : ""}`}</li>
         </ul>
       </div>
-      <figure class="cg-fac-art">${art
-        ? `<img src="${esc(art.src)}" width="${art.w}" height="${art.h}" alt="${esc(title)}" decoding="async" draggable="false"/>`
-        : `<div class="cg-emblem" aria-hidden="true"><span>${esc(initials)}</span></div>`}</figure>
+      ${art ? `<figure class="cg-fac-art" aria-hidden="true"><img src="${esc(art.src)}" width="${art.w}" height="${art.h}" alt="" decoding="async" draggable="false"/></figure>`
+        : window.DUNE_ART ? "" : `<figure class="cg-fac-art emblem" aria-hidden="true"><div class="cg-emblem"><span>${esc(initials)}</span></div></figure>`}
       <span class="pg">${esc(f.book)}${art ? ` · art: ${esc(art.caption)}` : ""}</span>
     </article>`;
   }

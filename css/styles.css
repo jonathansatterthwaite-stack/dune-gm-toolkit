@@ -631,15 +631,19 @@ body.gx-open { overflow: hidden; }
 .cg-stamp, .cg-suits { position: absolute; top: -0.55rem; right: 0.7rem; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; padding: 1px 8px; border-radius: 999px; }
 .cg-stamp { background: var(--book-red); color: var(--on-accent); }
 .cg-suits { background: var(--good-soft); color: var(--good); border: 1px solid var(--good); }
-.cg-facard { flex-basis: 300px; min-height: 680px; padding-bottom: 0.5rem; }
+/* faction cards: always the book's light parchment, whatever the theme, so the art cut from the printed page sits on
+   the colour it was printed on; the character stands behind the text as a faint watermark */
+.cg-facard { --parch: #fbf3e2; --parch-2: #f2e3c4; --parch-edge: #d9c19a; --book-red: #c0561e; --ink: #2b2118; --muted: #7a6a58;
+  color: var(--ink); flex-basis: 300px; min-width: 0; min-height: 560px; padding-bottom: 0.5rem; isolation: isolate; }
 .cg-facard .cg-fac-text { position: relative; z-index: 1; }
-.cg-fac-art { flex: 1 1 auto; display: flex; align-items: flex-end; justify-content: center; margin: 0.2rem -0.9rem 0.3rem; min-height: 360px; }
-.cg-fac-art img { display: block; width: auto; height: auto; max-width: 100%; max-height: 430px; object-fit: contain; object-position: bottom center; filter: drop-shadow(0 6px 8px rgba(60, 35, 10, 0.25)); user-select: none; transition: transform 0.2s; }
-.cg-facard:hover .cg-fac-art img { transform: translateY(-3px); }
-.cg-emblem { width: 150px; height: 150px; margin-bottom: 4.5rem; display: grid; place-items: center; transform: rotate(45deg); border: 2px solid var(--book-red); outline: 1px solid var(--parch-edge); outline-offset: 7px; background: var(--parch-2); }
+.cg-fac-art { position: absolute; inset: 0; z-index: 0; margin: 0; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; border-radius: inherit; pointer-events: none; }
+.cg-fac-art img { display: block; height: 94%; width: auto; max-width: none; object-fit: contain; opacity: 0.2; mix-blend-mode: multiply; user-select: none; transition: opacity 0.2s; }
+.cg-facard:hover .cg-fac-art img, .cg-facard.on .cg-fac-art img { opacity: 0.28; }
+.cg-fac-art.emblem { align-items: center; padding-top: 30%; opacity: 0.35; }
+.cg-emblem { width: 150px; height: 150px; display: grid; place-items: center; transform: rotate(45deg); border: 2px solid var(--book-red); outline: 1px solid var(--parch-edge); outline-offset: 7px; background: var(--parch-2); }
 .cg-emblem span { transform: rotate(-45deg); font-family: var(--serif); font-variant: small-caps; font-size: 2.6rem; letter-spacing: 0.04em; color: var(--book-red); }
 .cg-facard .pg { position: relative; z-index: 1; }
-#cgFacStrip .cg-banner { min-height: 680px; }
+#cgFacStrip .cg-banner { min-height: 560px; }
 .cg-glance { border-collapse: collapse; width: 100%; max-width: 560px; font-size: 0.92rem; background: var(--parch); }
 .cg-glance th { font-family: var(--serif); font-variant: small-caps; text-align: left; padding: 0.35rem 0.6rem; border-bottom: 2px solid var(--book-red); }
 .cg-glance td { padding: 0.3rem 0.6rem; border-bottom: 1px solid var(--parch-edge); }
@@ -691,8 +695,7 @@ body.gx-open { overflow: hidden; }
   .cg-steps button.on { padding-right: 0.7rem; }
   .cg-arch { flex-basis: 78cqw; max-width: 300px; }
   .cg-banner { flex-basis: 62cqw; max-width: 230px; }
-  .cg-facard { min-height: 600px; }
-  .cg-fac-art img { max-height: 340px; }
+  .cg-facard { min-height: 520px; }
   #cgFacStrip .cg-banner, .cg-strip .cg-banner { min-height: 0; align-self: flex-start; flex-basis: 52cqw; }
   .cg-review { grid-template-columns: minmax(0, 1fr); }
   .cg-nav { position: sticky; bottom: 0; background: var(--bg); padding: 0.5rem 0; margin-bottom: 0; z-index: 5; }
@@ -718,8 +721,6 @@ html.cg-fit .cg-arch p { font-size: clamp(0.88rem, calc(0.95rem * var(--hn, 1)),
 html.cg-fit .cg-diamonds { font-size: clamp(0.84rem, calc(0.9rem * var(--hn, 1)), 0.98rem); }
 html.cg-fit .cg-facard { flex-basis: clamp(280px, calc(var(--h) * 0.42), 420px); min-height: 0; overflow: visible; padding-top: 0.8rem; }
 html.cg-fit .cg-facard .cg-stamp { top: -0.55rem; }
-html.cg-fit .cg-fac-art { flex: 1 1 0; min-height: 0; }
-html.cg-fit .cg-fac-art img { height: 100%; max-height: 100%; max-width: 100%; }
 html.cg-fit .cg-emblem { width: clamp(120px, calc(var(--h) * 0.2), 190px); height: clamp(120px, calc(var(--h) * 0.2), 190px); }
 
 /* ---------- Timeline (js/timeline.js): fills its area like the starmap. Every timeline is a line, and each
