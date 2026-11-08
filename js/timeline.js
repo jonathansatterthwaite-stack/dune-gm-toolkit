@@ -174,6 +174,10 @@
   // left, the Details (the picked event, the new-event form, or the viewed timeline) on the right.
   const editable = (b) => b && b.custom;
   const side = () => (T().side = Object.assign({ year: true, info: true }, T().side));
+  // The Year and Details panels can also be editors of their own (Known universe, Event details), each in its own
+  // area beside the timeline. While one is showing in the workspace, the timeline leaves out its floating panel.
+  const docked = (ed) => !!(G.layout && G.visible(ed));
+  const infoShown = () => docked("event") || side().info;
   const COLORS = ["#e2c391", "#86aef0", "#7fc48b", "#d98bd0", "#e8a050", "#6fd0c8", "#f08a78"];
   const ROW = 62, AXIS = 34, CURVE = 42, SPREAD = 27;  // SPREAD: between events in the same year
   const CAST_SPREAD = 44;  // the same on the player display  // a row's height, the year axis under the rows, a fork's curve
@@ -262,7 +266,7 @@
     const groups = {};
     state.forEach((s) => (groups[s.row.id] = groups[s.row.id] || { row: s.row, items: [] }).items.push(s));
     return `<div class="gx-head"><div class="gx-kicker">The Known Universe in</div><h2 class="tlx-h">${esc(yearText(year))}</h2>
-        <button class="gx-close" data-act="tlSide" data-s="year" aria-label="Hide the year panel" title="Hide">✕</button></div>
+        ${docked("universe") ? "" : `<button class="gx-close" data-act="tlSide" data-s="year" aria-label="Hide the year panel" title="Hide">✕</button>`}</div>
       <div class="gx-body">
         ${era ? `<p><b>${esc(era.name)}</b> <span class="muted small">${esc(yearText(era.from))} – ${esc(yearText(era.to))} · ${esc(era.src)}</span><br/>${esc(era.text)}</p>` : `<p class="muted">Before the eras of play.</p>`}
         <button class="gx-btn small ${T().follow ? "on" : ""}" data-act="tlFollow" aria-pressed="${!!T().follow}" title="When on, the Compendium shows every entry as it stands at the year under the center line">${T().follow ? "✓ Compendium follows this year" : "Compendium shows the books"}</button>
@@ -313,7 +317,7 @@
     if (!nb.parent) nb.parent = view.id;
     return `<div class="gx-head"><div class="gx-kicker">${swatch(view.id)}${view.fork ? `Splits from ${esc(p ? p.name : "?")} after ${esc(yearText(view.fork.year))}` : "The root timeline"}</div>
         ${editable(view) ? `<input class="gx-title" data-bind="timeline.branches.#${esc(view.id)}.name" value="${esc(view.name)}" aria-label="Timeline name"/>` : `<h2 class="tlx-h">${esc(view.name)}</h2>`}
-        <button class="gx-close" data-act="tlClose" aria-label="Hide the details panel" title="Hide">✕</button></div>
+        ${docked("event") ? "" : `<button class="gx-close" data-act="tlClose" aria-label="Hide the details panel" title="Hide">✕</button>`}</div>
       <div class="gx-body">
         ${editable(view) ? `<textarea data-bind="timeline.branches.#${esc(view.id)}.text" rows="3" placeholder="What makes ${esc(view.name)} different?">${esc(view.text || "")}</textarea>` : view.text ? `<p class="gx-lore">${esc(view.text)}</p>` : ""}
         <div class="gx-stats"><div><span>Events</span><b>${n}</b></div><div><span>Its own</span><b>${own}</b></div><div><span>Splits</span><b>${kids}</b></div></div>
@@ -375,7 +379,8 @@
   }
 
   G.views.timeline = () => {
-    const tl = T(), view = branchOf(tl.view) || branchOf("novels"), sd = side(), g = graph(view);
+    const tl = T(), view = branchOf(tl.view) || branchOf("novels"), g = graph(view);
+    const dy = docked("universe"), di = docked("event"), sd = { year: side().year && !dy, info: side().info && !di, key: side().key };
     return `<div class="gx tlx${sd.year ? "" : " no-year"}${sd.info ? "" : " no-info"}${sd.year || sd.info ? " panels" : ""}">
       <div class="tlx-scroller" id="tlScroller" tabindex="0" aria-label="Timeline: scroll or drag left and right; arrow keys step between events">
         <div class="tlx-track" style="width:calc(var(--pad) * 2 + ${g.W.toFixed(0)}px);--h:${g.H}px"><div class="tlx-graph" style="height:${g.H}px" data-vy="${g.vy}">${g.bands}${g.html}</div></div>
@@ -386,20 +391,24 @@
         <div class="gx-tools">
           ${G.select("timeline.view", rowsOf().map((r) => ({ v: r.b.id, l: (r.b.parent ? "⑂ " : "") + r.b.name })))}
           <button class="gx-btn" data-act="tlNewEvent" title="Add an event to ${esc(view.name)} at the year under the center line">＋ Event</button>
-          <button class="gx-btn ${sd.year ? "on" : ""}" data-act="tlSide" data-s="year" aria-pressed="${!!sd.year}" title="The year under the center line: its era and what holds">Year</button>
-          <button class="gx-btn ${sd.info ? "on" : ""}" data-act="tlSide" data-s="info" aria-pressed="${!!sd.info}" title="The picked event, or the timeline">Details</button>
+          ${dy ? "" : `<button class="gx-btn ${sd.year ? "on" : ""}" data-act="tlSide" data-s="year" aria-pressed="${!!sd.year}" title="The year under the center line: its era and what holds. It can also have an area of its own: Known universe">Year</button>`}
+          ${di ? "" : `<button class="gx-btn ${sd.info ? "on" : ""}" data-act="tlSide" data-s="info" aria-pressed="${!!sd.info}" title="The picked event, or the timeline. It can also have an area of its own: Event details">Details</button>`}
           <button class="gx-btn ${sd.key ? "on" : ""}${(tl.hideKinds || []).length ? " filtered" : ""}" data-act="tlSide" data-s="key" aria-pressed="${!!sd.key}" title="What the symbols mean; show or hide each kind of event">Key${(tl.hideKinds || []).length ? ` · ${KINDS.length - tl.hideKinds.length} of ${KINDS.length}` : ""}</button>
           ${castButtons()}
           <button class="gx-btn" data-act="tlFull" title="Full screen">⛶</button>
         </div>
       </div>
-      <section class="gx-panel gx-left tlx-left" id="tlLore" ${sd.year ? "" : "hidden"}>${sd.year ? lorePanel(centerYear()) : ""}</section>
-      <section class="gx-panel gx-right tlx-right" id="tlDetail" ${sd.info ? "" : "hidden"}>${sd.info ? detail(view) : ""}</section>
+      ${dy ? "" : `<section class="gx-panel gx-left tlx-left" id="tlLore" ${sd.year ? "" : "hidden"}>${sd.year ? lorePanel(centerYear()) : ""}</section>`}
+      ${di ? "" : `<section class="gx-panel gx-right tlx-right" id="tlDetail" ${sd.info ? "" : "hidden"}>${sd.info ? detail(view) : ""}</section>`}
       ${sd.key ? keyPanel(view) : ""}
       <div class="gx-bottom tlx-bottom"><div class="tlx-eras">${TL.eras.map((er) => `<button class="gx-btn" data-act="tlJump" data-y="${er.from}" title="${esc(er.text)}">${esc(er.name)}</button>`).join("")}<button class="gx-btn" data-act="tlJump" data-y="10190">The RPG (10190 AG)</button></div>
         <span class="tlx-hint">Drag or scroll · ← → step · click a line to follow it</span></div>
     </div>`;
   };
+
+  // the Known universe and Event details editors: the same panels, filling an area of their own
+  G.views.universe = () => `<div class="gx tlx tlx-pane" tabindex="-1"><section class="gx-panel tlx-left" id="tlLore">${lorePanel(centerYear())}</section></div>`;
+  G.views.event = () => `<div class="gx tlx tlx-pane" tabindex="-1"><section class="gx-panel tlx-right" id="tlDetail">${detail(branchOf(T().view) || branchOf("novels"))}</section></div>`;
 
   // the players' year and the player display, from the top bar
   function castButtons() {
@@ -455,7 +464,10 @@
   function onCenter(sc, exact) {
     if (!sc.isConnected) return;  // a strip replaced by a re-render resets to 0 and fires one last scroll: ignore it
     placeTags(sc);
-    const y = exact != null ? exact : yearAtX(sc.scrollLeft);
+    setYear(exact != null ? exact : yearAtX(sc.scrollLeft));
+  }
+  // the year under the center line changed: the label, the Compendium's year and the Year panel follow
+  function setYear(y) {
     if (y === lastYear) return;
     lastYear = y;
     T().center = y;
@@ -466,7 +478,8 @@
     clearTimeout(saveTimer); saveTimer = setTimeout(() => G.save(), 400);
   }
   function centerOn(y, smooth) {
-    const sc = scroller(); if (!sc) return;
+    const sc = scroller();
+    if (!sc) { lastYear = null; setYear(y); return; }  // no strip showing (only the docked panels): just move the year
     const left = xAt(y);
     if (smooth && sc.scrollTo) {
       sc.scrollTo({ left, behavior: "smooth" });
@@ -505,12 +518,16 @@
     sc.addEventListener("pointermove", (e) => { if (drag && e.pointerId === drag.id) { sc.scrollLeft = drag.left - (e.clientX - drag.x); sc.scrollTop = drag.top - (e.clientY - drag.y); } });
     const end = (e) => { if (drag && e.pointerId === drag.id) { drag = null; sc.classList.remove("dragging"); } };
     sc.addEventListener("pointerup", end); sc.addEventListener("pointercancel", end);
-    sc.parentElement.addEventListener("keydown", (e) => {
-      if (e.target.closest("input, textarea, select")) return;
-      if (e.key === "ArrowRight" || e.key === "ArrowLeft") { e.preventDefault(); step(e.key === "ArrowRight" ? 1 : -1); }
-      else if (e.key === "Escape" && (T().form || T().sel)) { e.preventDefault(); if (T().form) A.tlCancel(); else select(""); }
-    });
+    sc.parentElement.addEventListener("keydown", keys);
   });
+
+  // ← → step between events and Esc closes the form or the event, in the timeline and in its docked panels
+  function keys(e) {
+    if (e.target.closest("input, textarea, select")) return;
+    if (e.key === "ArrowRight" || e.key === "ArrowLeft") { e.preventDefault(); step(e.key === "ArrowRight" ? 1 : -1); }
+    else if (e.key === "Escape" && (T().form || T().sel)) { e.preventDefault(); if (T().form) A.tlCancel(); else select(""); }
+  }
+  G.afterRender.push((tab, body) => { if (tab !== "universe" && tab !== "event") return; const p = body.querySelector(".tlx-pane"); if (p) p.addEventListener("keydown", keys); });
 
   // pick an event in the viewed timeline without rebuilding the panel: mark its dot, show it, glide it to the center
   function select(id, glide) {
@@ -519,7 +536,7 @@
     document.querySelectorAll(".tlx-dot.on, .tlx-name.on").forEach((d) => d.classList.remove("on"));
     if (e) document.querySelectorAll(`.tlx-dot[data-id="${CSS.escape(e.id)}"], .tlx-name[data-id="${CSS.escape(e.id)}"]`).forEach((d) => d.classList.add("on"));
     const box = document.getElementById("tlDetail"); if (box && !box.hidden) box.innerHTML = detail(view);
-    if (e && !document.querySelector(`.tlx-name[data-id="${CSS.escape(e.id)}"]`)) G.render();  // its name wasn't shown: lay the names out again
+    if (e && scroller() && !document.querySelector(`.tlx-name[data-id="${CSS.escape(e.id)}"]`)) G.render();  // its name wasn't shown: lay the names out again
     if (e && glide !== false) centerOn(+e.year, true);
     G.save();
   }
@@ -531,7 +548,7 @@
     else if (dir > 0) i = evs.findIndex((e) => +e.year > y);
     else { i = -1; evs.forEach((e, k) => { if (+e.year < y) i = k; }); }
     if (i < 0 || i >= evs.length) return;
-    if (!side().info) { side().info = true; T().sel = evs[i].id; R(); centerOn(+evs[i].year, true); return; }
+    if (!infoShown()) { side().info = true; T().sel = evs[i].id; R(); centerOn(+evs[i].year, true); return; }
     select(evs[i].id);
   }
 
@@ -546,10 +563,9 @@
   A.tlView = (el) => { const b = branchOf(el.dataset.b); if (!b) return; T().view = b.id; T().form = null; T().sel = null; side().info = true; if (T().follow && nowSet()) T().now.branch = b.id; R(); };
   // pick an event; one on another line follows that line's timeline too
   A.tlSel = (el) => {
-    if (!G.visible("timeline")) return;
     const e = findEvent(el.dataset.id); if (!e) return;
     const inView = visible(T().view).some((x) => x.id === e.id);
-    if (inView && side().info && !T().form) { select(e.id); return; }
+    if (inView && infoShown() && !T().form) { select(e.id); return; }
     if (!inView) { T().view = e.branch; if (T().follow && nowSet()) T().now.branch = e.branch; }
     T().sel = e.id; T().form = null; side().info = true; R(); centerOn(+e.year, true);
   };

@@ -848,6 +848,11 @@ html.cg-fit .cg-emblem { width: clamp(120px, calc(var(--h) * 0.2), 190px); heigh
   .tlx .gx-left, .tlx .gx-right { left: 8px; right: 8px; }
   .tlx:not(.no-info) .gx-left { display: none; }
 }
+/* the Known universe and Event details editors: the timeline's panels, each filling an area of its own */
+.area[data-ed="universe"] .area-body, .area[data-ed="event"] .area-body { padding: 0; overflow: hidden; }
+.gx.tlx.tlx-pane { outline: none; background: radial-gradient(ellipse 120% 50% at 50% 120%, rgba(42, 80, 166, 0.16), transparent 70%), #07060a; }
+.gx.tlx.tlx-pane > .gx-panel { display: flex; inset: 0; width: auto; height: auto; border: 0; border-radius: 0; box-shadow: none; background: none; backdrop-filter: none; }
+.tlx-pane .gx-head { padding-top: 12px; }
 .tl-asof { margin: 0 0 0.7rem; padding: 0.5rem 0.8rem; border-radius: 8px; background: var(--crit-soft); border: 1px solid var(--crit); }
 .tl-chg { margin-left: 0.4rem; font: inherit; font-size: 0.7rem; font-weight: 700; padding: 0 7px; border-radius: 999px; border: 1px solid var(--crit); background: var(--crit-soft); color: var(--crit); cursor: pointer; vertical-align: 1px; }
 .db-row .tl-changed { color: var(--crit); font-weight: 700; }

@@ -22,17 +22,19 @@
   // ---------------- the workspaces ----------------
   const leaf = (ed) => ({ id: uid(), ed });
   const split = (dir, r, a, b) => ({ id: uid(), dir, r, a, b });
+  // the timeline flanked by its two panels as editors of their own: the year's state on the left, the event on the right
+  const timelineTrio = (tl) => split("row", 0.22, leaf("universe"), split("row", 0.7, tl || leaf("timeline"), leaf("event")));
   const PRESETS = {
     session: () => ({ name: "Session", root: split("row", 0.34, split("col", 0.19, leaf("controls"), split("col", 0.6, leaf("roller"), leaf("scene"))),
       split("row", 0.62, split("col", 0.55, leaf("conflict"), leaf("npcs")), split("col", 0.5, leaf("cast"), leaf("reference")))) }),
     prep: () => ({ name: "Prep", root: split("row", 0.42, leaf("compendium"), split("row", 0.5, split("col", 0.55, leaf("npcs"), leaf("hooks")), split("col", 0.5, leaf("worlds"), leaf("house")))) }),
-    lore: () => ({ name: "Lore", root: split("col", 0.58, split("row", 0.64, leaf("starmap"), leaf("compendium")), leaf("timeline")) }),
+    lore: () => ({ name: "Lore", root: split("col", 0.52, split("row", 0.64, leaf("starmap"), leaf("compendium")), timelineTrio()) }),
     characters: () => ({ name: "Characters", root: split("row", 0.62, leaf("characters"), leaf("compendium")) }),
   };
   const fresh = (key) => Object.assign({ id: key, preset: key, max: null }, PRESETS[key]());
-  const defaults = () => ({ v: 2, ws: "session", list: Object.keys(PRESETS).map(fresh) });
+  const defaults = () => ({ v: 3, ws: "session", list: Object.keys(PRESETS).map(fresh) });
   const L = () => G.S.layout;
-  const savedVersion = G.S.layout ? G.S.layout.v || 1 : 2;  // before the defaults fill in a version
+  const savedVersion = G.S.layout ? G.S.layout.v || 1 : 3;  // before the defaults fill in a version
   G.ensure("layout", defaults());
   const cur = () => L().list.find((w) => w.id === L().ws) || L().list[0];
 
@@ -69,6 +71,14 @@
         replace(ws, at.id, split("col", 0.19, leaf("controls"), at));
       }
       lay.v = 2;
+    }
+    // v3: the timeline's Year and Details panels became editors (Known universe, Event details); Lore gets them beside it
+    if (savedVersion < 3) {
+      lay.list.filter((w) => w.preset === "lore").forEach((ws) => {
+        const tl = leaves(ws.root).find((l) => l.ed === "timeline");
+        if (tl && !leaves(ws.root).some((l) => l.ed === "universe" || l.ed === "event")) replace(ws, tl.id, timelineTrio(tl));
+      });
+      lay.v = 3;
     }
   }
   tidy();
