@@ -364,7 +364,8 @@
     if (scrollTop) {
       // on a fitted screen, open the Archetype step with its strip filling the view
       const block = STEPS[W().step].key === "archetype" && document.documentElement.classList.contains("cg-fit") && document.querySelector(".cg-fitblock");
-      if (block) block.scrollIntoView({ block: "start" }); else window.scrollTo(0, 0);
+      const box = areaBox();
+      if (block) block.scrollIntoView({ block: "start" }); else if (box) box.scrollTop = 0; else window.scrollTo(0, 0);
     }
     stripLeft = {}; scrollToChosen = false; scrollTop = false;
   });
@@ -375,13 +376,18 @@
   // Each strip and its controls (.cg-fitblock) fill the window under the sticky header, with Back/Next
   // pinned at the bottom; cards grow with the height. Only on screens big enough to make that worthwhile.
   const root = document.documentElement;
-  const headerH = () => { const h = document.querySelector(".topbar"); return h ? h.getBoundingClientRect().height : 0; };
+  // in the toolkit the creator fills its area (js/areas.js), so "the screen" is that area
+  const areaBox = () => document.querySelector('.area[data-ed="characters"] .area-body');
+  const headerH = () => { if (areaBox()) return areaBox().getBoundingClientRect().top; const h = document.querySelector(".topbar"); return h ? h.getBoundingClientRect().height : 0; };
+  const viewW = () => (areaBox() ? areaBox().clientWidth : innerWidth);
+  const viewH = () => (areaBox() ? areaBox().clientHeight : innerHeight);
+  const viewBottom = () => (areaBox() ? areaBox().getBoundingClientRect().bottom : innerHeight);
   function fitStrips() {
-    const on = G.S.tab === "characters" && !!CS().wiz && !!document.querySelector(".cg-wrap");
-    const fit = on && innerWidth >= 1000 && innerHeight >= 620;
+    const on = G.visible("characters") && !!CS().wiz && !!document.querySelector(".cg-wrap");
+    const fit = on && viewW() >= 900 && viewH() >= 600;
     root.classList.toggle("cg-on", on);
     root.classList.toggle("cg-fit", fit);
-    const hh = headerH();
+    const hh = areaBox() ? 0 : headerH();
     root.style.setProperty("--cg-header", hh + "px");
     const nav = document.querySelector(".cg-nav"), navH = nav ? nav.offsetHeight : 0;
     document.querySelectorAll(".cg-fitblock").forEach((b) => {
@@ -390,7 +396,7 @@
       cards.forEach((card) => (card.style.flexBasis = ""));
       if (!fit) { strip.style.removeProperty("--h"); strip.style.removeProperty("--hn"); return; }
       const other = b.offsetHeight - strip.offsetHeight;   // the heading, buttons and hint above the strip
-      const h = Math.max(440, Math.floor(innerHeight - hh - navH - other - 20));
+      const h = Math.max(440, Math.floor(viewH() - hh - navH - other - 20));
       strip.style.setProperty("--h", h + "px"); strip.style.setProperty("--hn", (h / 720).toFixed(3));
       // widen any archetype card whose text doesn't fit the height (long book descriptions), up to a limit
       cards.forEach((card) => {
@@ -428,7 +434,7 @@
     const card = e.target.closest(".cg-arch");                      // let an overflowing card scroll its text first
     if (card && card.scrollHeight > card.clientHeight + 1 && ((e.deltaY < 0 && card.scrollTop > 0) || (e.deltaY > 0 && card.scrollTop + card.clientHeight < card.scrollHeight - 1))) return;
     const r = strip.getBoundingClientRect(), nav = document.querySelector(".cg-nav");
-    if (r.top < headerH() - 2 || r.bottom > innerHeight - (nav ? nav.offsetHeight : 0) + 2) return;   // not all on screen yet
+    if (r.top < headerH() - 2 || r.bottom > viewBottom() - (nav ? nav.offsetHeight : 0) + 2) return;   // not all on screen yet
     const dy = e.deltaMode === 1 ? e.deltaY * 40 : e.deltaMode === 2 ? e.deltaY * strip.clientWidth : e.deltaY;
     const max = strip.scrollWidth - strip.clientWidth, from = strip._cgTarget != null ? strip._cgTarget : strip.scrollLeft;
     if ((dy < 0 && from <= 0) || (dy > 0 && from >= max - 1)) return;   // at an end: hand back to the page

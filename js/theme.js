@@ -1,5 +1,5 @@
 // Theme switch: "Imperial" (dark, gold line work: the default) or "Parchment" (light). The choice is kept in
-// localStorage under its own key so index.html can apply it before the stylesheets load.
+// localStorage under its own key so the page can apply it before the stylesheets load.
 (function () {
   const G = window.GM, KEY = "duneGM.theme", root = document.documentElement;
   const isLight = () => root.dataset.theme === "light";
@@ -15,6 +15,4 @@
     label();
   };
   label();
-  // the header's tool switcher: open (or bring forward) the Character maker, Lore or GM tools
-  G.actions.openTool = (el) => { if (el.dataset.tool && el.dataset.tool !== G.tool) G.openTool(el.dataset.tool); };
 })();

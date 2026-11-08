@@ -19,7 +19,7 @@
   const state = () => Object.assign(DEF(), G.S.cast || {});
 
   // ---------------- from any tool: ask the GM Tools to show something ----------------
-  const ask = (op, p, label) => G.remote("gm", "cast", Object.assign({ op }, p), { wake: true, label });
+  const ask = (op, p, label) => { G.remote("gm", "cast", Object.assign({ op }, p)); if (label) G.toast(label); };
   const shown = (id) => { const st = state(); return st.open && st.cards.some((c) => c.id === id); };
   G.cast = {
     state, shown,
@@ -44,7 +44,7 @@
   };
 
   // ---------------- the GM Tools: the state, the requests, and the window ----------------
-  if (G.tool === "gm") {
+  if (G.hosts("gm")) {
     G.ensure("cast", DEF());
     G.S.cast.open = false;  // the display doesn't reopen by itself when the GM Tools start
     G.inbox.cast = (p) => {
@@ -79,8 +79,8 @@
     const check = (path, label, hint) => `<label class="check"><input type="checkbox" data-bind="cast.${path}" data-type="bool" ${G.S.cast[path] ? "checked" : ""}/> <span>${label}${hint ? `<br/><span class="hint">${hint}</span>` : ""}</span></label>`;
     const BG_HINT = {
       none: "A plain Imperial screen. Cards and overlays sit on it.",
-      starmap: "The galaxy map, full screen. It follows Lore's map: pick a system or world there, or open a solar system, and the display flies to it.",
-      timeline: "The campaign's timeline, full screen, following the event or year you pick in Lore's timeline but never past the players' year.",
+      starmap: "The galaxy map, full screen. It follows your Galaxy map: pick a system or world there, or open a solar system, and the display flies to it.",
+      timeline: "The campaign's timeline, full screen, following the event or year you pick in your Timeline but never past the players' year.",
     };
     G.views.cast = () => {
       const c = G.S.cast, list = screens(), cur = pickScreen(list);
@@ -93,7 +93,7 @@
           <div class="card-head"><h2>Player display</h2>
             <div class="mini">${c.open ? `<span class="badge pass">On screen</span>` : `<span class="badge">Closed</span>`}
               <button class="btn ${c.open ? "" : "primary"}" data-act="castOpen">${c.open ? "Close the display" : "Open the display"}</button></div></div>
-          <p class="small">A second window for the players, for a projector, TV or second monitor. You choose what's on it from here, and with <b>Show to players</b> in Lore, the Character maker and on NPC cards.</p>
+          <p class="small">A second window for the players, for a projector, TV or second monitor. You choose what's on it from here, and with <b>Show to players</b> in the Compendium, the galaxy map, the timeline, character sheets and NPC cards.</p>
           ${list.length ? `<h3>Screen</h3><div class="cast-screens">${list.map((sc, i) => `<button class="cast-screen ${sc.id === cur ? "on" : ""}" data-act="castScreen" data-id="${esc(sc.id)}"><b>${esc(sc.label || "Display " + (i + 1))}</b><span>${sc.w} × ${sc.h}${sc.primary ? " · main screen" : ""}${sc.here ? " · this window" : ""}</span></button>`).join("")}</div>
             ${list.length === 1 ? `<p class="hint">Only one screen is connected, so the display opens as a window you can move and resize. Connect the projector or second monitor and pick it here to fill it.</p>` : list.find((s) => s.id === cur && s.here) ? `<p class="hint">That's the screen this window is on, so the display opens as a window rather than full screen.</p>` : ""}`
             : `<p class="hint">In a browser the display opens in its own window: drag it to the second screen and make it full screen (F11).</p>`}
@@ -103,8 +103,8 @@
           <h3>Background</h3>
           ${G.seg("cast.bg", [{ v: "none", l: "Plain" }, { v: "starmap", l: "Galaxy map" }, { v: "timeline", l: "Timeline" }])}
           <p class="small" style="margin-top:0.5rem">${BG_HINT[c.bg] || ""}</p>
-          ${c.bg === "timeline" && cp ? `<p class="small">Players' year: <b>${esc(G.timeline.yearText(cp.year))}</b> in ${esc(cpB ? cpB.name : cp.branch)}${cp.set ? "" : " (the RPG's setting; set your own in Lore's timeline)"}.</p>` : ""}
-          ${c.bg !== "none" ? `<button class="btn small" data-act="castOpenLore" data-tab="${c.bg}">Open it in Lore</button>` : ""}
+          ${c.bg === "timeline" && cp ? `<p class="small">Players' year: <b>${esc(G.timeline.yearText(cp.year))}</b> in ${esc(cpB ? cpB.name : cp.branch)}${cp.set ? "" : " (the RPG's setting; set your own in the Timeline)"}.</p>` : ""}
+          ${c.bg !== "none" ? `<button class="btn small" data-act="castOpenLore" data-tab="${c.bg}">Show me the ${c.bg === "starmap" ? "galaxy map" : "timeline"}</button>` : ""}
         </div>
         <div class="card">
           <h3>On top</h3>
@@ -126,7 +126,7 @@
           <h3>Show a card</h3>
           <h4>NPC roster</h4>
           <div class="chips">${npcs.map((n) => `<button class="chip chip-add ${shown("npc:" + n.id) ? "on" : ""}" data-act="castNpc" data-npc="${esc(n.id)}">${esc(n.name)}</button>`).join("") || `<span class="empty">No NPCs saved yet.</span>`}</div>
-          <h4>Characters <span class="muted small">(from the Character maker)</span></h4>
+          <h4>Characters</h4>
           <div class="chips">${chars.map((ch) => `<button class="chip chip-add ${shown("char:" + ch.id) ? "on" : ""}" data-act="castChar" data-id="${esc(ch.id)}">${esc(ch.name || "Unnamed")}</button>`).join("") || `<span class="empty">No characters yet.</span>`}</div>
           <h4>Handout</h4>
           <input type="text" data-bind="cast.handout.title" value="${esc(c.handout.title)}" placeholder="Title, e.g. A message from the Baron" style="width:100%"/>
@@ -149,7 +149,7 @@
       G.cast.card({ id: "note:" + uid(), kind: "handout", title: title || "Handout", text });
       G.S.cast.handout = { title: "", text: "" }; R();
     };
-    A.castOpenLore = (el) => G.remote("lore", "openTab", { tab: el.dataset.tab }, { focus: true, quiet: true });
+    A.castOpenLore = (el) => { G.S.tab = el.dataset.tab; R(); };
   }
 
   // ---------------- the display window ----------------

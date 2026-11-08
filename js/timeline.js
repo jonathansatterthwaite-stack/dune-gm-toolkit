@@ -326,7 +326,7 @@
     sc.addEventListener("pointerup", end); sc.addEventListener("pointercancel", end);
     sc.addEventListener("keydown", (e) => { if (e.key === "ArrowRight" || e.key === "ArrowLeft") { e.preventDefault(); step(e.key === "ArrowRight" ? 1 : -1); } });
   });
-  window.addEventListener("resize", () => { if (G.S.tab === "timeline") G.render(); });
+  window.addEventListener("resize", () => { if (G.visible("timeline")) G.render(); });
 
   // select an event without rebuilding the page: mark its dot, show it, glide it to the center
   function select(id, glide) {
@@ -357,13 +357,13 @@
   const R = () => { G.save(); G.render(); };
   const findEvent = (id) => allEvents().find((e) => e.id === id) || null;
   A.tlView = (el) => { T().view = el.dataset.b; T().form = null; T().sel = null; if (T().follow && nowSet()) T().now.branch = T().view; R(); };
-  A.tlSel = (el) => { if (G.S.tab !== "timeline") return; select(el.dataset.id); };
+  A.tlSel = (el) => { if (!G.visible("timeline")) return; select(el.dataset.id); };
   A.tlStep = (el) => step(+el.dataset.dir);
   A.tlJump = (el) => centerOn(+el.dataset.y, true);
   A.tlCampaign = () => { T().campaign = { branch: T().view, year: centerYear() }; G.toast(`Players' year set to ${yearText(centerYear())} in ${(branchOf(T().view) || {}).name}`); R(); };
   A.tlCast = () => { if (!G.cast) return; const st = G.cast.state(); G.cast.bg(st.open && st.bg === "timeline" ? "none" : "timeline"); };
   A.tlFollow = () => { T().follow = !T().follow; T().now = T().follow ? { branch: T().view, year: centerYear() } : { branch: T().view, year: "" }; R(); };
-  A.tlOpen = (el) => { G.S.tab = "compendium"; A.dbGo(el); window.scrollTo(0, 0); };
+  A.tlOpen = (el) => { G.S.tab = "compendium"; A.dbGo(el); G.areaTop("compendium"); };
   A.tlClearNow = () => { T().now.year = ""; T().follow = false; R(); };
   A.tlFork = (el) => {
     const e = findEvent(el.dataset.id); if (!e) return;
@@ -406,8 +406,8 @@
     else T().events.push(Object.assign({ id: "events:mine-" + uid(), branch: T().view }, data));
     T().form = null; R();
   };
-  A.tlEdit = (el) => { const e = T().events.find((x) => x.id === el.dataset.id); if (!e) return; T().form = Object.assign({ table: "npcs", entry: "", field: "status", value: "" }, JSON.parse(JSON.stringify(e)), { editId: e.id }); R(); window.scrollTo(0, 0); };
+  A.tlEdit = (el) => { const e = T().events.find((x) => x.id === el.dataset.id); if (!e) return; T().form = Object.assign({ table: "npcs", entry: "", field: "status", value: "" }, JSON.parse(JSON.stringify(e)), { editId: e.id }); R(); G.areaTop("timeline"); };
   A.tlDel = (el) => { const e = T().events.find((x) => x.id === el.dataset.id); if (!e || !confirm(`Delete the event "${e.name}"?`)) return; T().events = T().events.filter((x) => x !== e); R(); };
   // from the Compendium: jump to an event in its timeline
-  A.tlGoEvent = (el) => { const e = findEvent(el.dataset.id); if (!e) return; G.S.tab = "timeline"; T().view = e.branch; T().sel = e.id; T().center = +e.year; if (T().follow) T().now = { branch: e.branch, year: +e.year }; R(); window.scrollTo(0, 0); };
+  A.tlGoEvent = (el) => { const e = findEvent(el.dataset.id); if (!e) return; G.S.tab = "timeline"; T().view = e.branch; T().sel = e.id; T().center = +e.year; if (T().follow) T().now = { branch: e.branch, year: +e.year }; R(); G.areaTop("timeline"); };
 })();

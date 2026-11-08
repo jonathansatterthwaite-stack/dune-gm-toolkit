@@ -460,13 +460,13 @@
   };
   // From the GM tools' NPC roster: the Character maker builds the character, so the NPC travels with the request.
   const fromNpcHere = A.chFromNpc;
-  if (G.tool === "character") G.inbox.chFromNpc = (p) => {
+  if (G.hosts("character")) G.inbox.chFromNpc = (p) => {
     const had = G.findNpc(p.npc.id);
     if (!had) G.S.npcs.unshift(p.npc);
     fromNpcHere({ dataset: { npc: p.npc.id } });
     if (!had) G.S.npcs = G.S.npcs.filter((x) => x.id !== p.npc.id);
   };
-  else A.chFromNpc = (el) => { const n = G.findNpc(el.dataset.npc); if (n) G.remote("character", "chFromNpc", { npc: n }, { focus: true, label: "Opening " + n.name + " in the Character maker" }); };
+  else A.chFromNpc = (el) => { const n = G.findNpc(el.dataset.npc); if (n) G.remote("character", "chFromNpc", { npc: n }); };
 
   // Rule helpers shared with the guided creator (js/chargen.js).
   G.chars = { blank, validate, applyArchetype, autofill, drives, bestDrive, assetQuota, sheetHTML, arch, fac, talentDef, cur, CS, ALL_DRIVES, clone };

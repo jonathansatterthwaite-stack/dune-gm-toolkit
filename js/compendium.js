@@ -31,8 +31,8 @@
   if (fullState === "loading") {
     const s = document.createElement("script");
     s.src = "js/db/fulltext.local.js?t=" + Date.now();
-    s.onload = () => { fullState = window.DUNE_FULLTEXT ? "ready" : "missing"; if (G.S.tab === "compendium" || G.S.tab === "characters") G.render(); };
-    s.onerror = () => { fullState = "missing"; if (G.S.tab === "compendium") G.render(); };
+    s.onload = () => { fullState = window.DUNE_FULLTEXT ? "ready" : "missing"; if (G.visible("compendium") || G.visible("characters")) G.render(); };
+    s.onerror = () => { fullState = "missing"; if (G.visible("compendium")) G.render(); };
     document.head.appendChild(s);
   }
   const FT = () => (window.DUNE_FULLTEXT && window.DUNE_FULLTEXT.entries) || {};
@@ -42,7 +42,7 @@
   if (!window.DUNE_ART && LOCAL) {
     const s = document.createElement("script");
     s.src = "js/db/art.local.js?t=" + Date.now();
-    s.onload = () => { if (G.S.tab === "compendium" || G.S.tab === "characters") G.render(); };
+    s.onload = () => { if (G.visible("compendium") || G.visible("characters") || G.visible("cast")) G.render(); };
     s.onerror = () => {};
     document.head.appendChild(s);
   }
@@ -374,15 +374,15 @@ ${r.text}`;
   const A = G.actions;
   const rowFrom = (el) => getRow(el.dataset.id);
   A.dbTable = (el) => { const s = ST(); s.table = el.dataset.t; s.facet = ""; s.limit = 200; s.draft = null; R(); };
-  A.dbSel = (el) => { ST().sel = el.dataset.id; ST().draft = null; R(); if (window.innerWidth < 960) setTimeout(() => document.querySelector(".db-detail")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); };
+  A.dbSel = (el) => { ST().sel = el.dataset.id; ST().draft = null; R(); const d = document.querySelector(".db-detail"); if (d && d.getBoundingClientRect().top > (d.closest(".area-body") || document.body).getBoundingClientRect().bottom - 40) d.scrollIntoView({ behavior: "smooth", block: "start" }); };
   A.dbGo = (el) => { const r = rowFrom(el); if (!r) return; const s = ST(); s.sel = r.id; s.draft = null; if (s.table !== "*" && s.table !== r._t) { s.table = r._t; s.facet = ""; s.q = ""; } R(); };
   A.dbMore = () => { ST().limit += 200; R(); };
 
   // These change data the GM tools or the Character maker own, so they are sent there as requests (GM.remote);
   // the handlers below run in the owning tool only.
-  A.dbNpcRoster = (el) => { const n = rowFrom(el); if (n) G.remote("gm", "dbNpcRoster", { id: n.id }, { label: n.name + " sent to the NPC roster in GM tools" }); };
-  A.dbNpcConflict = (el) => { const n = rowFrom(el); if (n) G.remote("gm", "dbNpcConflict", { id: n.id }, { label: n.name + " sent to the conflict in GM tools" }); };
-  A.dbNpcCreator = (el) => { const n = rowFrom(el); if (n) G.remote("character", "dbNpcCreator", { id: n.id }, { focus: true, label: "Opening " + n.name + " in the Character maker" }); };
+  A.dbNpcRoster = (el) => { const n = rowFrom(el); if (n) G.remote("gm", "dbNpcRoster", { id: n.id }); };
+  A.dbNpcConflict = (el) => { const n = rowFrom(el); if (n) G.remote("gm", "dbNpcConflict", { id: n.id }); };
+  A.dbNpcCreator = (el) => { const n = rowFrom(el); if (n) G.remote("character", "dbNpcCreator", { id: n.id }); };
   A.dbGiveAsset = (el) => { const r = rowFrom(el); if (r) G.remote("character", "dbGiveAsset", { id: r.id }); };
   A.dbGiveTalent = (el) => { const r = rowFrom(el); if (r) G.remote("character", "dbGiveTalent", { id: r.id }); };
   // a card for the player display: the entry as it stands in the GM's year, with its art. NPC summaries can hold
@@ -405,7 +405,7 @@ ${r.text}`;
   G.dbRow = getRow; G.artFor = artFor;
   A.dbSceneTrait = (el) => { const r = rowFrom(el); if (r) G.addSceneTrait(r.name, "trait"); };
   const IN = G.inbox, rowOf = (p) => getRow(p.id);
-  if (G.tool === "gm") Object.assign(IN, {
+  if (G.hosts("gm")) Object.assign(IN, {
     dbNpcRoster: (p) => { const n = rowOf(p); if (!n) return; G.S.npcs.unshift(npcToRoster(n)); G.toast(n.name + " saved to the NPC roster"); },
     dbNpcConflict: (p) => {
       const n = rowOf(p); if (!n) return;
@@ -414,7 +414,7 @@ ${r.text}`;
         assets: (n.assets || []).map((a) => { const d = findRow("assets", a); return { id: uid(), name: a, q: d ? d.q || 0 : 0, def: /shield|armou?r/i.test(a) }; }) });
     },
   });
-  if (G.tool === "character") Object.assign(IN, {
+  if (G.hosts("character")) Object.assign(IN, {
     dbNpcCreator: (p) => {
       const n = rowOf(p); if (!n || !G.actions.chFromNpc) return;
       // reuse the roster converter via a temporary entry, then carry over talents and assets

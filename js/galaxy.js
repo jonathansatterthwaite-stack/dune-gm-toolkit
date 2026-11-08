@@ -920,15 +920,20 @@
     });
   }
   function hide() { root.hidden = true; document.body.classList.remove("gx-open"); E.active = false; Viewer.active = false; }
-  G.afterRender.push((tab) => {
+  // In the toolkit the map lives in the Galaxy map area: moved into it when it shows, paused when it doesn't.
+  G.afterLayout.push((eds) => {
     if (CAST) return;  // the display shows and hides the map itself
-    if (tab === "starmap") show(); else { lastTab = tab; if (!root.hidden) hide(); }
+    const host = document.querySelector('.area[data-ed="starmap"] .gx-host');
+    if (eds.includes("starmap") && host) { if (root.parentNode !== host) host.appendChild(root); show(); }
+    else if (!root.hidden) hide();
     const cb = $("gxCastBtn"); if (cb) { const on = !!(G.cast && G.cast.state().open && G.cast.state().bg === "starmap"); cb.classList.toggle("on", on); cb.textContent = on ? "On the player display" : "Show to players"; }
   });
-  G.views.starmap = () => `<div class="card"><h2>Known Universe</h2><p>The galaxy map opens full screen.</p><button class="btn primary" data-act="gxOpen">Open the map</button></div>`;
+  G.views.starmap = () => `<div class="gx-host"></div>`;
+  G.views.starmap.keep = true;  // drawn once; the map keeps its own canvas and panels
 
   document.addEventListener("keydown", (e) => {
     if (root.hidden || e.key !== "Escape") return;
+    if (!CAST && !root.matches(":hover") && !root.contains(document.activeElement)) return;  // only when working in the map
     if (document.activeElement && document.activeElement.id === "gxSearch" && $("gxResults").innerHTML) { hideResults(); return; }
     if (E.mode === "system") A.gxLeave(); else if (GX().selSystem) A.gxClose(); else A.gxExit();
   });
@@ -960,7 +965,7 @@
   const R = () => { G.save(); G.render(); };
   A.gxOpen = () => { G.S.tab = "starmap"; R(); };
   A.gxExit = () => { leaveSystem(); if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); G.S.tab = lastTab === "starmap" ? "worlds" : lastTab; R(); };
-  A.gxFull = () => { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); else document.documentElement.requestFullscreen().catch(() => G.toast("Full screen isn't available here")); };
+  A.gxFull = () => { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); else (root.closest(".area") || document.documentElement).requestFullscreen().catch(() => G.toast("Full screen isn't available here")); };
   A.gxView = (el) => { leaveSystem(); const gx = GX(); gx.selSystem = ""; gx.selPlanet = ""; gx.camView = { v: el.dataset.v, n: ((gx.camView && gx.camView.n) || 0) + 1 }; if (el.dataset.v === "galaxy") viewGalaxy(); else viewImperium(); R(); };
   A.gxCast = () => { if (!G.cast) return; const st = G.cast.state(); G.cast.bg(st.open && st.bg === "starmap" ? "none" : "starmap"); };
   A.gxEnter = () => { const gx = GX(); if (!gx.selSystem) return; enterSystem(gx.selSystem); R(); };

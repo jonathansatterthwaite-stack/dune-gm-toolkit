@@ -46,7 +46,7 @@
     };
   }
 
-  // saved data comes from js/store.js: this tool's own keys plus read-only copies of the other tools' data
+  // saved data comes from js/store.js
   const STORE = window.DUNE_STORE, TOOL = STORE.TOOL, TOOL_TABS = STORE.CFG.tabs.map((t) => t[0]);
   function load() {
     try {
@@ -64,7 +64,8 @@
         } else base[k] = saved[k];
       }
       base.ui = Object.assign(defaults().ui, saved.ui || {});
-      if (!TOOL_TABS.includes(base.tab)) base.tab = TOOL_TABS[0];
+      // the toolkit treats "tab" as a request to bring that editor into view (js/areas.js); start with none
+      base.tab = STORE.VIEWER ? TOOL_TABS[0] : "";
       return base;
     } catch (e) {
       return defaults();
@@ -774,12 +775,14 @@
   // RENDER
   // =====================================================================
   function render() {
-    document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("on", b.dataset.tab === S.tab));
     const views = Object.assign({ roller: renderRoller, conflict: renderConflict, npcs: renderNpcs, scene: renderScene, hooks: renderHooks, reference: renderReference }, GM.views);
+    // the toolkit: every editor in its own area of the current workspace (js/areas.js)
+    if (GM.layout && !STORE.VIEWER) { GM.layout.render(views); renderPools(); return; }
     if (!TOOL_TABS.includes(S.tab)) S.tab = TOOL_TABS[0];
     $("#main").innerHTML = (views[S.tab] || (() => ""))();
     renderPools();
-    GM.afterRender.forEach((f) => f(S.tab));
+    GM.afterRender.forEach((f) => f(S.tab, $("#main")));
+    GM.afterLayout.forEach((f) => f([S.tab]));
   }
 
   // =====================================================================
@@ -970,15 +973,7 @@
 
   document.addEventListener("click", (e) => {
     const tab = e.target.closest("[data-tab]");
-    if (tab) {
-      const t = tab.dataset.tab;
-      if (!TOOL_TABS.includes(t)) {
-        const other = Object.keys(STORE.TOOLS).find((k) => STORE.TOOLS[k].tabs.some((x) => x[0] === t));
-        if (other) GM.remote(other, "openTab", { tab: t }, { focus: true, quiet: true });
-        return;
-      }
-      S.tab = t; save(); render(); window.scrollTo(0, 0); return;
-    }
+    if (tab) { S.tab = tab.dataset.tab; save(); render(); return; }
     const el = e.target.closest("[data-act]");
     if (!el || el.disabled) return;
     const fn = actions[el.dataset.act] || GM.actions[el.dataset.act];
@@ -1018,7 +1013,7 @@
   });
   document.addEventListener("keydown", (e) => {
     if ((e.target.closest && e.target.closest("input, textarea, select")) || e.ctrlKey || e.metaKey || e.altKey) return;
-    if ((e.key === "r" || e.key === "R") && S.tab === "roller" && TOOL === "gm") { e.preventDefault(); doRoll(); }
+    if ((e.key === "r" || e.key === "R") && GM.visible("roller")) { e.preventDefault(); doRoll(); }
   });
 
   // ---------- session dialog ----------
@@ -1056,40 +1051,38 @@
   window.GM = {
     get S() { return S; },
     D, save, render, toast, adjust, log, esc, uid, pick, shuffle, clamp, pct, stepper, seg, select, sideBadge, getPath, setPath,
-    views: {}, actions: {}, onChange: [], onInput: [], afterRender: [],
+    // afterRender: (editor, its element) after each area or view is drawn; afterLayout: (visible editors) once per draw
+    views: {}, actions: {}, onChange: [], onInput: [], afterRender: [], afterLayout: [],
     // give a module its own top-level state key, filling in any missing fields
     ensure(key, def) { S[key] = Object.assign(def, S[key] || {}); return S[key]; },
     tool: TOOL, tools: STORE.TOOLS,
-    // whether this tool may edit a saved key (it owns it)
+    // whether this app may edit a saved key (the toolkit owns them all; the player display owns none)
     canEdit: (key) => STORE.owns(key),
-    // ask the tool that owns some data to change it. Runs here if this tool owns it; otherwise it is sent as a
-    // request that the owner carries out (opening that tool first when opts.focus is set)
-    remote(tool, type, payload, opts) {
-      opts = opts || {};
-      if (tool === TOOL) { const fn = GM.inbox[type]; if (fn) { fn(payload || {}); save(); render(); } return; }
-      STORE.send(tool, { type, payload: payload || {}, focus: !!opts.focus });
-      if (opts.focus) STORE.open(tool); else if (opts.wake) STORE.wake(tool);
-      if (!opts.quiet) toast(opts.label || "Sent to " + STORE.TOOLS[tool].short);
+    // whether this app keeps a group's data (js/tools.js DUNE_DOMAINS: "character", "lore", "gm")
+    hosts: (domain) => { const d = (window.DUNE_DOMAINS || {})[domain]; return !!d && d.owns.every((k) => STORE.owns(k)); },
+    // whether an editor is showing (the toolkit's areas; on the display, its one view)
+    visible: (ed) => (GM.layout && !STORE.VIEWER ? GM.layout.visible(ed) : S.tab === ed),
+    // scroll an editor's area back to its top
+    areaTop: (ed) => { const b = document.querySelector(`.area[data-ed="${ed}"] .area-body`); if (b) b.scrollTop = 0; },
+    // carry out a change to a group's data: the handlers in GM.inbox, registered where that data is kept.
+    // (These were requests between apps when the toolkit was three apps; now they run in place.)
+    remote(domain, type, payload) {
+      if (!GM.hosts(domain)) return;
+      const fn = GM.inbox[type]; if (fn) { fn(payload || {}); save(); render(); }
     },
-    // handlers for requests from other tools, by type (each tool registers the ones for data it owns)
     inbox: {
-      openTab: (p) => { if (TOOL_TABS.includes(p.tab)) { S.tab = p.tab; window.scrollTo(0, 0); } },
+      openTab: (p) => { if (TOOL_TABS.includes(p.tab)) S.tab = p.tab; },
     },
-    openTool: (t) => STORE.open(t),
     // jump to the GM tools' Dice tab with a pre-filled test
-    prefillRoll(o) { GM.remote("gm", "prefillRoll", o, { focus: true, label: "Sent to the dice roller in GM tools" }); },
-    addSceneTrait(name, kind) { GM.remote("gm", "addSceneTrait", { name, kind }, { label: "Sent \u201c" + name + "\u201d to the scene in GM tools" }); },
+    prefillRoll(o) { GM.remote("gm", "prefillRoll", o); },
+    addSceneTrait(name, kind) { GM.remote("gm", "addSceneTrait", { name, kind }); },
     addSceneTask(name, req, peril) { GM.remote("gm", "addSceneTask", { name, req, peril }); },
     // conflict helpers for other modules
-    addCombatant(o) { GM.remote("gm", "addCombatant", o, { label: "Sent " + (o.name || "a combatant") + " to the conflict in GM tools" }); },
+    addCombatant(o) { GM.remote("gm", "addCombatant", o); },
     conflictSkill: () => CONFLICT_TYPES[S.conflict.type].skill,
     focusSkill, findNpc: (id) => findNpc(id), tierName, effReq, conflictName: (k) => (CONFLICT_TYPES[k] || { name: k }).name,
     start: () => {
-      // requests from the other tools, and their data changing underneath this one
-      STORE.onMessage((m) => {
-        const fn = GM.inbox[m.type]; if (!fn) return;
-        fn(m.payload || {}); save(); render();
-      });
+      // the player display: the toolkit's data changing underneath it
       STORE.onExternal((t, data) => {
         Object.assign(S, data);
         // don't redraw under someone typing; catch up when they leave the field
@@ -1102,9 +1095,9 @@
     },
   };
   let pendingRender = false;
-  // requests that change the GM tools' data: only the GM tools carry them out
-  if (TOOL === "gm") Object.assign(GM.inbox, {
-    prefillRoll: (o) => { Object.assign(S.roller, { side: "pc", npcId: "", focus: false, bonus: 0, autoOne: false, contest: false }, o); S.tab = "roller"; window.scrollTo(0, 0); },
+  // changes to the GM group's data that other editors ask for
+  if (GM.hosts("gm")) Object.assign(GM.inbox, {
+    prefillRoll: (o) => { Object.assign(S.roller, { side: "pc", npcId: "", focus: false, bonus: 0, autoOne: false, contest: false }, o); S.tab = "roller"; },
     addSceneTrait: (p) => { S.scene.traits.push({ id: uid(), name: p.name, rank: 1, kind: p.kind || "trait" }); toast("Scene trait added: " + p.name); },
     addSceneTask: (p) => { S.scene.tasks.push({ id: uid(), name: p.name, req: p.req, progress: 0, peril: !!p.peril }); },
     addCombatant: (o) => { S.conflict.combatants.push(newCombatant(o)); toast((o.name || "A combatant") + " joined the conflict"); },
